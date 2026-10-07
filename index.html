@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>本文JUMP</title>
+<meta name="theme-color" content="#A7E1F8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="本文JUMP">
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>">
+<link rel="apple-touch-icon" href="icon.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --sky:#A7E1F8; --sky2:#E3F6FD; --ink:#1D2B45; --muted:#4F6380;
+  --panel:#FFFFFF; --panel-edge:#1D2B45;
+  --tile:#FFFFFF; --tile-edge:#1D2B45; --tile-ink:#1D2B45;
+  --gold:#FFC83D; --gold-edge:#A86F00;
+  --qword:#8ED3FF; --qword-edge:#2F77B5;
+  --grass:#58B947; --dirt:#8A5A32;
+  --ok:#23994A; --ng:#D93B40;
+  --pixel:"DotGothic16", "M PLUS Rounded 1c", system-ui, sans-serif;
+  --body:"M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", system-ui, sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --sky:#13213F; --sky2:#243A66; --ink:#EAF2FF; --muted:#A9BCDA;
+    --panel:#1C2A4B; --panel-edge:#8FB0E0;
+    --tile:#F4F7FB; --tile-edge:#0E1830; --tile-ink:#1D2B45;
+    --grass:#3F8F35; --dirt:#5E3D22;
+  }
+}
+:root[data-theme="dark"]{
+  --sky:#13213F; --sky2:#243A66; --ink:#EAF2FF; --muted:#A9BCDA;
+  --panel:#1C2A4B; --panel-edge:#8FB0E0;
+  --tile:#F4F7FB; --tile-edge:#0E1830; --tile-ink:#1D2B45;
+  --grass:#3F8F35; --dirt:#5E3D22;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  margin:0;min-height:100%;
+  background:linear-gradient(180deg,var(--sky) 0%,var(--sky2) 100%) fixed, var(--sky);
+  color:var(--ink);font-family:var(--body);font-weight:500;line-height:1.6;
+  -webkit-tap-highlight-color:transparent;
+}
+main{max-width:560px;margin:0 auto;padding:16px 16px 120px}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,.tile:focus-visible{outline:3px solid #FF7A00;outline-offset:3px}
+.ground{position:fixed;left:0;right:0;bottom:0;height:calc(34px + env(safe-area-inset-bottom,0px));
+  background:linear-gradient(var(--grass) 0 10px,var(--dirt) 10px);pointer-events:none;z-index:0}
+main{position:relative;z-index:1}
+
+/* title / map */
+.logo{font-family:var(--pixel);font-size:44px;line-height:1.1;margin:12px 0 2px;letter-spacing:.02em}
+.logo .q{display:inline-block;background:var(--gold);color:#1D2B45;border:3px solid var(--gold-edge);
+  border-bottom-width:7px;border-radius:6px;padding:0 10px;margin-right:6px;transform:translateY(-4px)}
+.lead{margin:0 0 18px;color:var(--muted)}
+.path{display:flex;flex-direction:column;gap:12px}
+.node{display:flex;align-items:center;gap:14px;width:100%;text-align:left;
+  background:var(--panel);border:3px solid var(--panel-edge);border-bottom-width:6px;border-radius:10px;padding:12px 14px}
+.node[disabled]{opacity:.5;cursor:not-allowed}
+.node .num{flex:none;width:44px;height:44px;display:grid;place-items:center;font-family:var(--pixel);font-size:22px;
+  background:var(--gold);color:#1D2B45;border:3px solid var(--gold-edge);border-radius:6px}
+.node.boss .num{background:#FF8A8A;border-color:#A8323A}
+.node.paper .num{background:#FFFFFF;border-color:#1D2B45}
+.node .t{font-weight:800;font-size:17px;display:block}
+.node .s{font-size:13px;color:var(--muted);display:block}
+.node .stars{margin-left:auto;font-size:18px;letter-spacing:2px;white-space:nowrap}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.small{font-size:13px;color:var(--muted)}
+.linkbtn{background:none;border:none;text-decoration:underline;color:var(--muted);padding:4px}
+
+/* hud */
+.hud{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.hud .back{background:var(--panel);border:2px solid var(--panel-edge);border-radius:8px;padding:4px 10px;font-size:14px}
+.hud .name{font-family:var(--pixel);font-size:18px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hud .meta{font-size:14px;white-space:nowrap}
+.combo{font-weight:800;color:#E4570F}
+
+/* sign */
+.sign{background:var(--panel);border:3px solid var(--panel-edge);border-bottom-width:6px;border-radius:12px;padding:14px 16px;margin-bottom:14px}
+.sign .ins{font-size:14px;color:var(--muted);margin:0 0 4px}
+.sign .prompt{font-size:22px;font-weight:800;margin:0;line-height:1.4}
+.sign .ctx{font-size:16px;margin:6px 0 0;color:var(--muted)}
+.badge{display:inline-block;font-size:14px;font-weight:800;border-radius:999px;padding:2px 12px;margin-top:8px;border:2px solid currentColor}
+.badge.yes{color:var(--ok)} .badge.no{color:var(--ng)}
+.speak{background:none;border:2px solid var(--panel-edge);border-radius:999px;padding:2px 12px;font-size:14px;margin-top:8px;margin-left:6px}
+
+/* rail & tiles */
+.rail{min-height:72px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:12px;border-radius:12px;
+  border:3px dashed var(--panel-edge);background:color-mix(in srgb,var(--panel) 55%,transparent);margin-bottom:10px}
+.rail.demo{border-style:solid;justify-content:center;min-height:84px}
+.rail .empty{color:var(--muted);font-size:14px}
+.rail.shake{animation:shake .4s}
+@keyframes shake{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+.tile{font-family:var(--body);font-weight:800;font-size:20px;color:var(--tile-ink);
+  background:var(--tile);border:3px solid var(--tile-edge);border-bottom-width:7px;border-radius:8px;
+  padding:6px 14px 4px;min-height:48px;display:inline-flex;align-items:center;user-select:none}
+.tile.gold{background:var(--gold);border-color:var(--gold-edge)}
+.tile.qw{background:var(--qword);border-color:var(--qword-edge)}
+.tile.used{visibility:hidden}
+.tile:active{transform:translateY(3px);border-bottom-width:4px}
+.tile.flash{animation:flash .9s 2}
+.tile.bad{background:#FFD3D3;border-color:var(--ng)}
+@keyframes flash{50%{box-shadow:0 0 0 6px #FF7A00}}
+.tile.pulse{animation:pulse 1.2s infinite}
+@keyframes pulse{50%{transform:translateY(-6px)}}
+.punct{font-weight:800;font-size:26px;margin-left:-4px}
+.pool{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;min-height:60px;margin:6px 0 16px}
+
+.fb{min-height:28px;font-weight:700;margin:0 0 8px;font-size:15px}
+.fb.ng{color:var(--ng)} .fb.ok{color:var(--ok)}
+.actions{display:flex;gap:10px}
+.btn{flex:1;border:3px solid var(--panel-edge);border-bottom-width:6px;border-radius:10px;padding:10px 8px;
+  font-weight:800;font-size:16px;background:var(--panel)}
+.btn.primary{background:#FF8A1F;color:#fff;border-color:#9C4A00}
+.btn.go{background:var(--ok);color:#fff;border-color:#0F5B29}
+.btn:active{transform:translateY(3px);border-bottom-width:3px}
+.btn[disabled]{opacity:.45}
+
+.win{background:var(--panel);border:3px solid var(--ok);border-bottom-width:6px;border-radius:12px;padding:14px 16px;margin-top:4px}
+.win .big{font-size:24px;font-weight:800;margin:4px 0 8px}
+.win .say{font-size:15px;margin:0 0 12px}
+.pop{font-family:var(--pixel);color:#E4570F;font-size:20px}
+
+/* intro */
+.card{background:var(--panel);border:3px solid var(--panel-edge);border-bottom-width:6px;border-radius:12px;padding:16px;margin-bottom:14px}
+.card h2{font-family:var(--pixel);font-weight:400;font-size:24px;margin:0 0 6px}
+.card p{margin:6px 0}
+.ex{display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:2px dashed var(--panel-edge);padding:10px 0;font-size:18px;font-weight:800}
+.ex:first-of-type{border-top:none}
+
+/* result */
+.bigstars{font-size:52px;letter-spacing:6px;text-align:center;margin:10px 0}
+.center{text-align:center}
+
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(10,20,40,.55);display:grid;place-items:center;padding:16px;z-index:10}
+.modal .card{max-width:520px;width:100%}
+
+/* paper */
+.pitem{display:flex;gap:12px;align-items:flex-start;border-top:2px dashed var(--panel-edge);padding:12px 0}
+.pitem:first-of-type{border-top:none}
+.pitem input{width:26px;height:26px;margin-top:2px;flex:none;accent-color:var(--ok)}
+.pitem .no{font-family:var(--pixel);margin-right:4px}
+.pitem .ans{font-weight:800;margin-top:4px}
+
+
+
+.mic{background:#2F77B5;color:#fff;border-color:#163F63}
+.mic.on{background:var(--ng);border-color:#7A1B1F;animation:pulse 1s infinite}
+.heard{font-size:14px;color:var(--muted);margin:0 0 10px;min-height:1.4em}
+.heard.ok{color:var(--ok);font-weight:700}
+.pool.locked .tile{opacity:.3;pointer-events:none}
+.speak.must{background:#FF8A1F;color:#fff;border-color:#9C4A00;font-weight:800;animation:pulse 1.1s infinite}
+.speak.done{border-color:var(--ok);color:var(--ok)}
+.warn{background:#FFF1D6;color:#6B4200;border:2px solid #C98A00;border-radius:10px;padding:10px 12px;font-size:14px;margin:0 0 10px}
+/* buddy */
+.buddy{flex:none;width:64px;height:64px}
+.buddy svg{width:100%;height:100%;overflow:visible;animation:bob 2.2s ease-in-out infinite;transform-origin:50% 100%}
+.buddy.jump svg{animation:hop .65s cubic-bezier(.3,.7,.3,1)}
+.buddy.sad svg{animation:wob .6s}
+.buddy.cheer svg{animation:hop .65s cubic-bezier(.3,.7,.3,1) 3}
+.buddy .m-sad,.buddy .tear{display:none}
+.buddy.sad .m-happy{display:none}
+.buddy.sad .m-sad,.buddy.sad .tear{display:inline}
+@keyframes bob{50%{transform:translateY(-3px) scaleY(1.03)}}
+@keyframes hop{0%{transform:scale(1.1,.85)}35%{transform:translateY(-34px) scale(.95,1.08)}70%{transform:translateY(0) scale(1.1,.88)}100%{transform:none}}
+@keyframes wob{25%{transform:rotate(-10deg)}50%{transform:rotate(8deg)}75%{transform:rotate(-4deg)}}
+.buddyrow{display:flex;align-items:center;gap:10px;margin:0 0 8px}
+.buddyrow .fb{margin:0;flex:1}
+.bubble{background:var(--panel);border:2px solid var(--panel-edge);border-radius:12px;padding:6px 12px;font-size:14px;position:relative}
+.logorow{display:flex;align-items:flex-end;gap:10px}
+.logorow .buddy{width:72px;height:72px;margin-bottom:6px}
+.center .buddy{margin:0 auto;width:88px;height:88px}
+@media (prefers-reduced-motion: reduce){.buddy svg{animation:none!important}}
+@media (prefers-reduced-motion: reduce){
+  .tile.pulse,.tile.flash,.rail.shake{animation:none}
+}
+
+.prog{font-family:var(--pixel);font-weight:400;font-size:22px;margin:22px 0 4px}
+.prog small{font-family:var(--body);font-size:13px;color:var(--muted);display:block}
+.partbox{background:color-mix(in srgb,var(--panel) 45%,transparent);border:3px solid var(--panel-edge);border-radius:14px;padding:12px;margin:10px 0 14px}
+.partbox h3{margin:0 0 8px;font-size:18px}
+.partbox h3 span{font-size:13px;color:var(--muted);font-weight:500;margin-left:6px}
+.node.read .num{background:#8ED3FF;border-color:#2F77B5}
+.node.locked{opacity:.55}
+.lockedprog{background:var(--panel);border:3px dashed var(--panel-edge);border-radius:12px;padding:10px 14px;margin:8px 0;color:var(--muted);font-size:14px}
+.choices{display:grid;gap:10px;margin:6px 0 14px}
+.opt{text-align:left;background:var(--panel);border:3px solid var(--panel-edge);border-bottom-width:6px;border-radius:10px;padding:12px 14px;font-size:17px;font-weight:700}
+.opt[disabled]{opacity:.4}
+.opt.good,.opt.bad{opacity:1!important}
+.opt.good{background:#C9F2D6;color:#1D2B45;border-color:var(--ok)}
+.opt.bad{background:#FFD3D3;color:#1D2B45;border-color:var(--ng)}
+.typearea{position:relative;border:3px dashed var(--panel-edge);border-radius:12px;padding:12px 8px;margin-bottom:10px;background:color-mix(in srgb,var(--panel) 55%,transparent)}
+.typearea.focus{border-style:solid;border-color:#FF8A1F}
+.slots{display:flex;flex-wrap:wrap;justify-content:center;gap:5px 3px;pointer-events:none}
+.slot{min-width:16px;height:34px;border-bottom:3px solid var(--muted);font-size:23px;font-weight:800;display:flex;align-items:flex-end;justify-content:center;line-height:1.1}
+.slot.sp{min-width:10px;border-bottom-style:dotted}
+.slot.done{border-color:var(--ok)}
+.slot.cur{border-color:#FF8A1F}
+.slot.hint{color:var(--muted);opacity:.7}
+.slots.shake{animation:shake .4s}
+#kb{position:absolute;inset:0;width:100%;height:100%;opacity:0;font-size:16px;border:0;background:transparent;color:transparent;caret-color:transparent}
+.tapnote{font-size:13px;color:var(--muted);text-align:center;margin:-4px 0 10px}
+.besttag{font-weight:800;color:#E4570F}
+.besttag.over{color:var(--muted)}
+.rl{display:flex;gap:10px;align-items:flex-start;border-top:2px dashed var(--panel-edge);padding:10px 0;text-align:left;width:100%;background:none;border-left:0;border-right:0;border-bottom:0}
+.rl:first-of-type{border-top:none}
+.rl .sp{font-size:12px;color:var(--muted);font-weight:700;width:74px;flex:none;padding-top:3px}
+.rl .e{display:block;font-size:18px;font-weight:800}
+.rl .j{display:none;font-size:14px;color:var(--muted)}
+.showja .rl .j{display:block}
+.rowbtns{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.rowbtns .btn{flex:none;padding:8px 14px;font-size:15px}
+.partbox.concept{background:color-mix(in srgb,#FFF4CC 70%,transparent)}
+.node.concept .num{background:#FFF4CC;border-color:#A86F00}
+.tile.newtile{animation:newpop .5s}
+@keyframes newpop{0%{transform:translateY(-18px) scale(.6);opacity:0}70%{transform:translateY(3px) scale(1.08)}100%{transform:none;opacity:1}}
+.blank{display:inline-block;border-bottom:3px solid #FF8A1F;color:#FF8A1F;min-width:48px;text-align:center}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<div class="ground" aria-hidden="true"></div>
+<script>
+/* ---------- data ---------- */
+const T=(sp,en,ja)=>({sp,en,ja});
+const PROGRAMS=[
+ {id:4,title:"Let's Enjoy Japanese Food",parts:[
+  {id:"4-1",name:"Part 1",pages:"p.55",items:[
+   T("Mao","Lunch is ready.","昼ごはんの用意ができたよ。"),
+   T("Daniel","Thank you. Is this udon?","ありがとう。これはうどん?"),
+   T("Mao","Yes, it's kitsune udon.","うん、きつねうどんだよ。"),
+   T("Daniel","Kitsune? I don't eat fox meat.","キツネ? ぼくはキツネの肉は食べないよ。"),
+   T("Mao","Ha-ha. Don't worry.","ハハハ。心配しないで。"),
+   T("Mao","This is deep-fried tofu.","これは油揚げだよ。"),
+   T("Mao","In Japanese legend, it's the favorite food of foxes.","日本の伝説では、それはキツネの大好物なんだ。"),
+   T("Daniel","Oh, I see. So this is kitsune udon.","ああ、なるほど。だからこれはきつねうどんなんだね。"),
+   T("Mao","Yes. Let's eat.","うん。食べよう。")]},
+  {id:"4-2",name:"Part 2",pages:"p.56",items:[
+   T("Ms. Furuse","Would you like some tea?","お茶はいかが?"),
+   T("Daniel","Thank you. Who's this lady?","ありがとうございます。この女の人はだれですか。"),
+   T("Ms. Furuse","She's my sister Aki.","彼女は私の姉[妹]のアキよ。"),
+   T("Ms. Furuse","She's a chef in Texas.","彼女はテキサスでシェフをしているの。"),
+   T("Daniel","Wow, cool!","わあ、かっこいい!"),
+   T("Ms. Furuse","She's good at cooking Japanese dishes.","彼女は日本料理を作るのが得意なの。"),
+   T("Ms. Furuse","Her chawan-mushi is excellent.","彼女の茶わんむしはすばらしいのよ。"),
+   T("Daniel","Chawan-mushi? What is it?","茶わんむし? それは何ですか。"),
+   T("Ms. Furuse","It's a Japanese traditional dish.","日本の伝統的な料理よ。"),
+   T("Ms. Furuse","You make it just like custard pudding.","カスタードプリンとちょうど同じように作るの。"),
+   T("Daniel","Is chawan-mushi sweet?","茶わんむしは甘いですか。"),
+   T("Ms. Furuse","No, but it's delicious.","いいえ、でもとてもおいしいわよ。")]}
+ ]},
+ {id:5,title:"Pajama Day",parts:[
+  {id:"5-1",name:"Part 1",pages:"p.65",items:[
+   T("Daniel","This is my cousin Jenny.","これはぼくのいとこのジェニーだよ。"),
+   T("Daniel","She lives in New York.","彼女はニューヨークに住んでいるんだ。"),
+   T("Miki","Oh! She's in pajamas at school, right?","あら! 彼女、学校でパジャマを着ているよね?"),
+   T("Daniel","Yes. She doesn't like her school uniform.","うん。彼女は制服が好きじゃないんだ。"),
+   T("Miki","Really?","本当?"),
+   T("Daniel","Ha-ha. Just kidding.","ハハハ。冗談だよ。"),
+   T("Daniel","This is a photo of Pajama Day.","これはパジャマデーの写真だよ。"),
+   T("Miki","Pajama Day? Is that common in the U.S.?","パジャマデー? それはアメリカではふつうなの?"),
+   T("Daniel","Yes. Students and teachers spend the day in pajamas.","うん。生徒と先生がその日をパジャマで過ごすんだ。"),
+   T("Miki","That's funny!","おもしろいね!")]},
+  {id:"5-2",name:"Part 2",pages:"p.66",items:[
+   T("Miki","Is Pajama Day only for schools?","パジャマデーは学校だけのものなの?"),
+   T("Daniel","No. Some companies have Pajama Day too.","ううん。パジャマデーがある会社もあるよ。"),
+   T("Daniel","My uncle often talks about it.","ぼくのおじさんがよくその話をするんだ。"),
+   T("Miki","Does he work in pajamas all day?","おじさんは一日中パジャマで働くの?"),
+   T("Daniel","Yes, he does. He's proud of that.","うん、そうだよ。おじさんはそれを誇りに思っているんだ。"),
+   T("Miki","What do you mean?","どういう意味?"),
+   T("Daniel","Some people join Pajama Day for charity.","チャリティーのためにパジャマデーに参加する人もいるんだ。"),
+   T("Daniel","They support sick children in hospitals.","入院している病気の子どもたちを支援しているんだよ。"),
+   T("Miki","That's wonderful!","すばらしいね!")]}
+ ]},
+ {id:6,title:"The Way to School",parts:[
+  {id:"6-1",name:"Part 1",pages:"p.75",items:[
+   T("Anya","Look at this boy.","この男の子を見て。"),
+   T("Ken","Who is he?","彼はだれ?"),
+   T("Anya","He's Jackson. He lives in Kenya.","彼はジャクソン。ケニアに住んでいるの。"),
+   T("Anya","I respect him.","私は彼を尊敬しているの。"),
+   T("Ken","Tell me about him.","彼のことを教えて。"),
+   T("Anya","Every morning he runs and walks 15 kilometers to school.","毎朝、彼は学校まで15キロを走ったり歩いたりするの。"),
+   T("Anya","It takes two hours.","2時間かかるのよ。"),
+   T("Ken","Wow!","わあ!"),
+   T("Anya","He goes to school with his sister.","彼はお姉さん[妹]といっしょに学校に行くの。"),
+   T("Anya","He walks across the savanna with her.","彼は彼女といっしょにサバンナを歩いて横切るの。"),
+   T("Ken","That's tough.","それはたいへんだね。")]},
+  {id:"6-2",name:"Part 2",pages:"p.76",items:[
+   T("Ken","The savanna is amazing.","サバンナはすごいね。"),
+   T("Anya","It's a dangerous place too, you know.","危険な場所でもあるのよ。"),
+   T("Ken","Why is it dangerous?","どうして危険なの?"),
+   T("Anya","Because elephants sometimes attack schoolchildren.","ゾウがときどき通学中の子どもたちをおそうからよ。"),
+   T("Ken","No way! Are Jackson and his sister safe?","まさか! ジャクソンとお姉さん[妹]は無事なの?"),
+   T("Anya","No. Their parents pray for their safety.","ううん。両親は2人の無事を祈っているの。"),
+   T("Ken","Well then, why does Jackson go to school?","それじゃあ、どうしてジャクソンは学校に行くの?"),
+   T("Anya","Because he has a dream.","夢があるからよ。"),
+   T("Ken","What's his dream?","彼の夢は何?"),
+   T("Anya","The hint is \"airplane.\" Think about it.","ヒントは「飛行機」。考えてみて。")]}
+ ]},
+ {id:7,title:"Research on Australia",parts:[
+  {id:"7-1",name:"Part 1",pages:"p.85",items:[
+   T("Ken","Can you tell me about Australia?","オーストラリアについて教えてくれる?"),
+   T("Emily","Sure. There is a famous place in Sydney.","もちろん。シドニーに有名な場所があるよ。"),
+   T("Ken","It's the Opera House, right?","オペラハウスだよね?"),
+   T("Emily","Exactly. There are a lot of unique animals in Australia too.","その通り。オーストラリアにはめずらしい動物もたくさんいるよ。"),
+   T("Ken","I know koalas and kangaroos.","コアラとカンガルーは知ってるよ。"),
+   T("Emily","Then do you know quokkas?","じゃあ、クオッカは知ってる?"),
+   T("Ken","Quokkas? No, I don't.","クオッカ? ううん、知らない。"),
+   T("Emily","They are like small kangaroos.","小さなカンガルーみたいなの。"),
+   T("Emily","I have some pictures of quokkas.","クオッカの写真を何枚か持ってるよ。"),
+   T("Ken","Wow, they are so cute!","わあ、とてもかわいいね!")]},
+  {id:"7-2",name:"Part 2",pages:"p.86",items:[
+   T("Emily","Australia is famous for its rich nature too.","オーストラリアは豊かな自然でも有名なの。"),
+   T("Ken","What is your favorite place?","きみのいちばん好きな場所はどこ?"),
+   T("Emily","I love the Great Barrier Reef. Look!","グレートバリアリーフが大好き。見て!"),
+   T("Mao","Wow, that looks like a heart.","わあ、ハートみたいに見えるね。"),
+   T("Mao","How can I go there?","どうやってそこに行けるの?"),
+   T("Emily","By helicopter or seaplane.","ヘリコプターか水上飛行機でだよ。"),
+   T("Emily","The scenery from the sky is gorgeous.","空からの景色はとてもすばらしいの。"),
+   T("Mao","Can I land on the island?","その島に降りられるの?"),
+   T("Emily","No, you can't. It's a coral reef.","ううん、できないよ。サンゴ礁なの。"),
+   T("Ken","It's really beautiful.","本当にきれいだね。"),
+   T("Ken","Mao, let's go to Australia someday.","真央、いつかオーストラリアに行こうよ。"),
+   T("Emily","I can show you around.","私が案内してあげるよ。")]}
+ ]}
+];
+
+const W=(en,ja)=>({en,ja});
+const WORDS={
+ "4-1":[W("lunch","昼食"),W("ready","用意ができた"),W("meat","肉"),W("fox","キツネ"),W("eat","食べる"),W("ha-ha","ハハハ(笑い声)"),
+        W("worry","心配する"),W("deep-fried","油で揚げた"),W("Japanese","日本の"),W("legend","伝説"),W("favorite","いちばん好きな"),W("food","食べ物")],
+ "4-2":[W("would","(Would you like ～?で)～はいかが"),W("who's","だれは～ですか(who is)"),W("lady","女の人"),W("she's","彼女は～です(she is)"),
+        W("sister","姉・妹"),W("chef","シェフ・料理人"),W("Texas","テキサス"),W("cool","かっこいい"),W("cooking","料理(すること)"),W("dish","料理"),
+        W("excellent","すばらしい"),W("traditional","伝統的な"),W("custard pudding","カスタードプリン"),W("sweet","甘い"),W("delicious","とてもおいしい")],
+ "5-1":[W("cousin","いとこ"),W("live","住む"),W("pajamas","パジャマ"),W("school uniform","制服"),W("Just kidding.","冗談だよ。"),W("common","ふつうの・よくある"),W("spend","過ごす"),W("photo","写真"),W("students","生徒(複数)"),W("teachers","先生(複数)"),W("really","本当に"),W("funny","おもしろい")],
+ "5-2":[W("only","～だけ"),W("company","会社"),W("companies","会社(複数)"),W("work","働く"),W("all day","一日中"),W("proud","誇りに思って"),W("be proud of","～を誇りに思う"),W("mean","意味する"),W("charity","チャリティー・慈善"),W("support","支える・支援する"),W("uncle","おじ"),W("often","よく・しばしば"),W("talk","話す"),W("join","参加する"),W("sick","病気の"),W("hospital","病院"),W("wonderful","すばらしい")],
+ "6-1":[W("respect","尊敬する"),W("tell","話す・伝える"),W("hour","時間(60分)"),W("across","～を横切って"),W("savanna","サバンナ"),W("tough","たいへんな"),W("Kenya","ケニア"),W("every morning","毎朝"),W("kilometer","キロメートル"),W("run","走る"),W("walk","歩く"),W("take","(時間が)かかる")],
+ "6-2":[W("amazing","すごい"),W("dangerous","危険な"),W("attack","おそう"),W("schoolchildren","通学中の子どもたち"),W("safe","安全な"),W("parent","親"),W("pray","祈る"),W("safety","安全"),W("has","持っている(haveの三単現)"),W("what's","what is の短縮形"),W("airplane","飛行機"),W("you know","～だよね"),W("No way!","まさか!"),W("dream","夢"),W("sometimes","ときどき")],
+ "7-1":[W("Sydney","シドニー"),W("exactly","その通り"),W("lot","たくさん(a lot of)"),W("a lot of","たくさんの"),W("unique","めずらしい・独特の"),W("quokka","クオッカ"),W("famous","有名な"),W("place","場所"),W("koala","コアラ"),W("kangaroo","カンガルー"),W("picture","写真・絵"),W("small","小さい")],
+ "7-2":[W("rich","豊かな"),W("helicopter","ヘリコプター"),W("seaplane","水上飛行機"),W("scenery","景色"),W("gorgeous","とても美しい"),W("land","着陸する・降りる"),W("coral reef","サンゴ礁"),W("someday","いつか"),W("around","あちこち(show ～ aroundで案内する)"),W("be famous for","～で有名だ"),W("look like","～のように見える"),W("heart","ハート"),W("island","島"),W("nature","自然")]
+};
+const LV={
+ 1:{name:"本文音読",sub:"お手本を聞いて、1文ずつ声に出して読む",type:"read"},
+ 2:{name:"英→日",sub:"英文を聞いて、日本語の意味をえらぶ",type:"choice"},
+ 3:{name:"日→英＋音読",sub:"日本語に合う英文をえらんで、声に出して言う",type:"je"}
+};
+const MAXLV=3;
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const app = $('#app');
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+const shuffle = a => { a=[...a]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
+const fmt = s => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+const findPart = id => { for(const p of PROGRAMS) if(p.parts) for(const q of p.parts) if(q.id===id) return q; };
+const starStr = n => '★'.repeat(n)+'☆'.repeat(3-n);
+
+/* storage */
+const KEY='honbun-jump-v2';
+let save={parts:{},sound:true,micRequired:true};
+try{ const r=localStorage.getItem(KEY); if(r) save=Object.assign(save,JSON.parse(r)); }catch(e){}
+function persist(){ try{ localStorage.setItem(KEY,JSON.stringify(save)); }catch(e){} }
+save.lessons=save.lessons||{};
+const P = id => save.parts[id] || (save.parts[id]={lv:{},paper:{}});
+const unlocked = (id,l) => l===1 || !!P(id).lv[l-1];
+
+/* sound & voice */
+let ac=null;
+function beep(freqs,dur=.09,type='square'){
+  if(!save.sound) return;
+  try{ ac=ac||new (window.AudioContext||window.webkitAudioContext)(); const t=ac.currentTime;
+    freqs.forEach((f,i)=>{ const o=ac.createOscillator(),g=ac.createGain(); o.type=type; o.frequency.value=f;
+      g.gain.setValueAtTime(.07,t+i*dur); g.gain.exponentialRampToValueAtTime(.001,t+(i+1)*dur);
+      o.connect(g).connect(ac.destination); o.start(t+i*dur); o.stop(t+(i+1)*dur+.02); }); }catch(e){}
+}
+const fmt0=0;const sfx={tap:()=>beep([700],.05),key:()=>beep([880],.03),coin:()=>beep([988,1319],.1),ng:()=>beep([220,150],.14,'sawtooth'),fan:()=>beep([523,659,784,1047],.12)};
+function mkU(text){ const u=new SpeechSynthesisUtterance(text.replace(/-/g,' ')); u.lang='en-US'; u.rate=.85;
+  const v=speechSynthesis.getVoices().filter(v=>/^en(-|_)US/i.test(v.lang)); const pick=v.find(x=>/Samantha|Google US English|Aria|Jenny|Ava/i.test(x.name))||v[0]; if(pick) u.voice=pick; return u; }
+function speak(text,onEnd){
+  let fired=false; const fin=()=>{ if(fired) return; fired=true; onEnd&&onEnd(); };
+  try{ if(!('speechSynthesis' in window)){ fin(); return; }
+    speechSynthesis.cancel(); const u=mkU(text); u.onend=fin; u.onerror=fin; speechSynthesis.speak(u);
+    if(onEnd) setTimeout(fin,1800+text.length*110);
+  }catch(e){ fin(); }
+}
+function speakAll(list){ try{ speechSynthesis.cancel(); list.forEach(t=>speechSynthesis.speak(mkU(t))); }catch(e){} }
+
+/* buddy "ポン" (original character) */
+function buddySVG(){
+  return `<svg viewBox="0 0 64 64" aria-hidden="true">
+    <ellipse cx="32" cy="61" rx="15" ry="2.5" fill="rgba(0,0,0,.18)"/>
+    <path d="M32 24 Q31 17 32 12" stroke="#2E7D32" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M32 13 Q22 4 16 11 Q24 17 32 13Z" fill="#6CCB4E" stroke="#1D2B45" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M32 13 Q42 2 49 8 Q41 16 32 13Z" fill="#6CCB4E" stroke="#1D2B45" stroke-width="2.5" stroke-linejoin="round"/>
+    <ellipse cx="24" cy="58" rx="6" ry="3.5" fill="#E8A86A" stroke="#1D2B45" stroke-width="2.5"/>
+    <ellipse cx="40" cy="58" rx="6" ry="3.5" fill="#E8A86A" stroke="#1D2B45" stroke-width="2.5"/>
+    <ellipse cx="32" cy="40" rx="20" ry="17" fill="#FFD9A8" stroke="#1D2B45" stroke-width="3"/>
+    <circle cx="25" cy="38" r="3.4" fill="#1D2B45"/><circle cx="39" cy="38" r="3.4" fill="#1D2B45"/>
+    <circle cx="26.2" cy="36.8" r="1.1" fill="#fff"/><circle cx="40.2" cy="36.8" r="1.1" fill="#fff"/>
+    <ellipse cx="19.5" cy="44" rx="3.5" ry="2" fill="#FF9B9B" opacity=".75"/>
+    <ellipse cx="44.5" cy="44" rx="3.5" ry="2" fill="#FF9B9B" opacity=".75"/>
+    <path class="m-happy" d="M28 44 Q32 49 36 44" stroke="#1D2B45" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path class="m-sad" d="M28 47.5 Q32 43.5 36 47.5" stroke="#1D2B45" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path class="tear" d="M42 41 q2 4 0 6 q-2 -2 0 -6Z" fill="#6EC6F0"/>
+  </svg>`;
+}
+function buddy(id,cls=''){ return `<div class="buddy ${cls}" id="${id}">${buddySVG()}</div>`; }
+function setBuddy(id,state){ const b=document.getElementById(id); if(!b) return;
+  b.classList.remove('jump','sad','cheer'); void b.offsetWidth; if(state) b.classList.add(state); }
+
+
+
+/* ---------- speech recognition ---------- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let micBlocked=false;
+const JPW=new Set(['udon','kitsune','chawan','mushi','tofu','aki','furuse','mao','jenny','miki','jackson','anya','ken','kenya','emily','quokka','quokkas','sydney','savanna']);
+function norm(t){
+  return t.toLowerCase().replace(/[’‘]/g,"'")
+    .replace(/\bisn't\b/g,'is not').replace(/\bdon't\b/g,'do not').replace(/\blet's\b/g,'let us')
+    .replace(/\b(it|she|he|who|that|what)'s\b/g,'$1 is').replace(/\bha-ha\b/g,'haha').replace(/\bha ha\b/g,'haha')
+    .replace(/[^a-z ]/g,' ').replace(/\s+/g,' ').trim().split(' ').filter(Boolean);
+}
+function lcs(a,b){ const d=Array(b.length+1).fill(0);
+  for(const x of a){ let prev=0; for(let j=1;j<=b.length;j++){ const tmp=d[j]; d[j]= x===b[j-1] ? prev+1 : Math.max(d[j],d[j-1]); prev=tmp; } }
+  return d[b.length]; }
+function matchScore(heard,target){ const t=norm(target).filter(w=>!JPW.has(w)), h=norm(heard); return t.length ? lcs(t,h)/t.length : 1; }
+function listen(target,onRes,onErr){
+  const r=new SR(); r.lang='en-US'; r.interimResults=false; r.maxAlternatives=5; let done=false;
+  r.onresult=e=>{ done=true; const alts=[...e.results[0]].map(a=>a.transcript);
+    let best=alts[0]||'',bs=0; alts.forEach(a=>{ const sc=matchScore(a,target); if(sc>bs){bs=sc;best=a;} }); onRes(best,bs); };
+  r.onerror=e=>{ done=true; onErr(e.error); };
+  r.onend=()=>{ if(!done) onErr('no-speech'); };
+  try{ speechSynthesis.cancel(); r.start(); }catch(e){ onErr('start'); }
+  return r;
+}
+
+/* ---------- map ---------- */
+function showMap(){
+  stopTimer();
+  app.innerHTML=`
+    <div class="logorow"><h1 class="logo"><span class="q">本文</span>JUMP</h1>${buddy('mapb')}</div>
+        ${save.micRequired && !SR ? `<p class="warn">このブラウザは音声認識に対応していないため、マイク必須のままだと音読のところで先へ進めません。iPhone の Safari か Android の Chrome で開くか、下の「マイク必須」をオフにしてください。</p>`:''}
+    <p class="lead">ポンと一緒に、まず<b>文のしくみ</b>を見つけて、それから<b>本文</b>に親しもう。</p>
+    ${PROGRAMS.map(pg=> pg.locked
+      ? `<div class="lockedprog">🔒 Program ${pg.id} ${esc(pg.title)} — 授業が進んだら開放</div>`
+      : `<h2 class="prog">Program ${pg.id}<small>${esc(pg.title)}</small></h2>
+        <div class="partbox concept"><h3>A しくみを見つける<span>はじめにやろう</span></h3><div class="path">
+          ${(LESSONS[pg.id]||[]).map(L=>{const r=save.lessons[L.id];return `<button class="node concept" data-lesson="${L.id}"><span class="num">💡</span><span><span class="t">${esc(L.name)}</span><span class="s">${esc(L.sub)}</span></span><span class="stars">${r?starStr(r.stars):''}</span></button>`}).join('')}
+        </div></div>
+        ${pg.parts.map(q=>{ const pp=P(q.id); const allDone=!!pp.lv[MAXLV];
+          return `<div class="partbox"><h3>B 本文 ${q.name}<span>${q.pages}・${q.items.length}文</span></h3>
+          <div class="path">
+            <button class="node read" data-read="${q.id}"><span class="num">📖</span><span><span class="t">本文を見る・聞く</span><span class="s">いつでも通して聞ける</span></span></button>
+            ${[1,2,3].map(l=>{ const ok=unlocked(q.id,l), r=pp.lv[l];
+              return `<button class="node" data-p="${q.id}" data-l="${l}" ${ok?'':'disabled'}>
+                <span class="num">${l}</span>
+                <span><span class="t">${LV[l].name}</span><span class="s">${LV[l].sub}</span></span>
+                <span class="stars">${r?starStr(r.stars):(ok?'':'🔒')}</span></button>`}).join('')}
+            <button class="node paper" data-paper="${q.id}" ${allDone?'':'disabled'}>
+              <span class="num">✎</span><span><span class="t">紙ミッション</span><span class="s">日本語を見てノートに英文を書く</span></span>
+              <span class="stars">${allDone? q.items.filter((_,i)=>pp.paper[i]).length+'/'+q.items.length : '🔒'}</span></button>
+          </div></div>`}).join('')}`).join('')}
+    <div class="row" style="margin-top:18px">
+      <button class="linkbtn" id="snd">効果音：${save.sound?'オン':'オフ'}</button>
+      <button class="linkbtn" id="mreq">マイク必須：${save.micRequired?'オン':'オフ'}（保護者用・2秒長押し）</button>
+    </div>`;
+  app.querySelectorAll('[data-lesson]').forEach(b=>b.onclick=()=>{ sfx.tap(); startLesson(findLesson(b.dataset.lesson)); });
+  app.querySelectorAll('[data-read]').forEach(b=>b.onclick=()=>{ sfx.tap(); showReader(findPart(b.dataset.read)); });
+  app.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{ sfx.tap(); startLevel(findPart(b.dataset.p),+b.dataset.l); });
+  app.querySelectorAll('[data-paper]').forEach(b=>b.onclick=()=>{ sfx.tap(); showPaper(findPart(b.dataset.paper)); });
+  $('#mapb').onclick=()=>{ sfx.coin(); setBuddy('mapb','jump'); };
+  $('#snd').onclick=()=>{ save.sound=!save.sound; persist(); showMap(); };
+  { const b=$('#mreq'); let t=null;
+    const down=e=>{ e.preventDefault(); b.textContent='そのまま押し続けて…'; t=setTimeout(()=>{ save.micRequired=!save.micRequired; persist(); sfx.coin(); showMap(); },2000); };
+    const up=()=>{ if(t){ clearTimeout(t); t=null; b.textContent=`マイク必須：${save.micRequired?'オン':'オフ'}（保護者用・2秒長押し）`; } };
+    b.addEventListener('pointerdown',down); ['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,up));
+    b.addEventListener('contextmenu',e=>e.preventDefault()); }
+  window.scrollTo(0,0);
+}
+
+/* ---------- reader ---------- */
+function showReader(q){
+  app.innerHTML=`
+    <div class="hud"><button class="back" id="back">マップ</button><span class="name">${q.name} 本文</span></div>
+    <div class="card">
+      <h2>${q.name}<span class="small" style="margin-left:8px">${q.pages}</span></h2>
+      <p class="small">文をタップすると、その文を読み上げるよ。</p>
+      <div class="rowbtns"><button class="btn primary" id="all">🔊 全部聞く</button><button class="btn" id="tj">日本語を表示</button><button class="btn" id="stop">止める</button></div>
+      <div id="rd">${q.items.map((it,i)=>`<button class="rl" data-i="${i}"><span class="sp">${esc(it.sp)}</span><span><span class="e">${esc(it.en)}</span><span class="j">${esc(it.ja)}</span></span></button>`).join('')}</div>
+    </div>
+    <button class="btn go" id="toLv" style="width:100%">Lv1 本文音読をはじめる</button>`;
+  $('#back').onclick=()=>{ try{speechSynthesis.cancel();}catch(e){} showMap(); };
+  app.querySelectorAll('.rl').forEach(b=>b.onclick=()=>speak(q.items[+b.dataset.i].en));
+  $('#all').onclick=()=>speakAll(q.items.map(i=>i.en));
+  $('#stop').onclick=()=>{ try{speechSynthesis.cancel();}catch(e){} };
+  $('#tj').onclick=()=>{ const r=$('#rd'); r.classList.toggle('showja'); $('#tj').textContent=r.classList.contains('showja')?'日本語をかくす':'日本語を表示'; };
+  $('#toLv').onclick=()=>{ try{speechSynthesis.cancel();}catch(e){} startLevel(q,1); };
+  window.scrollTo(0,0);
+}
+
+
+/* ---------- play ---------- */
+let S={};
+function stopTimer(){}
+function startLevel(q,l){
+  const m=LV[l];
+  let items;
+  if(m.type==='read') items=q.items.map((it,k)=>({...it,_id:k}));
+  else if(m.type==='words'){ const ws=WORDS[q.id]||[];
+    items=[...shuffle(ws).map((w,k)=>({...w,dir:'ej',_id:'e'+k})), ...shuffle(ws).map((w,k)=>({...w,dir:'je',_id:'j'+k}))]; }
+  else items=shuffle(q.items).map((it,k)=>({...it,_id:k}));
+  S={kind:'part',title:q.name+' '+m.name,q,l,m,queue:items,retried:new Set(),missItems:new Set(),misses:0,combo:0,best:0,mic:0,total:items.length,done:0};
+  nextItem();
+}
+function hud(){
+  return `<div class="hud"><button class="back" id="back">マップ</button>
+    <span class="name">${esc(S.title)}</span>
+    <span class="meta">${S.done}/${S.total}<span class="combo">${S.combo>=2?' 🔥'+S.combo:''}</span></span></div>`;
+}
+function bindBack(){ $('#back').onclick=()=>{ try{speechSynthesis.cancel();}catch(e){} showMap(); }; }
+function fb(text,cls=''){ const f=$('#fb'); if(!f) return; f.className='fb bubble '+cls; f.textContent=text; }
+function nextItem(){
+  const it=S.queue.shift();
+  if(!it) return showResult();
+  S.item=it; S.solved=false; S.itemMiss=0;
+  if(S.kind==='lesson') return it.q==='choice'?renderConcept():renderPuzzle();
+  ({read:renderRead,choice:renderChoice,je:renderJE,puzzle:renderPuzzle,words:renderWord})[S.m.type]();
+}
+function itemDone(clean){
+  const it=S.item;
+  if(clean){ S.combo++; S.best=Math.max(S.best,S.combo); }
+  else { S.combo=0; S.missItems.add(it._id); if(!S.retried.has(it._id)&&!(S.m&&S.m.type==='read')){ S.retried.add(it._id); S.queue.push({...it}); } }
+  S.done=S.total-new Set(S.queue.map(x=>x._id)).size;
+}
+
+/* mic gate (共通) : text を声に出して言えたら onNext */
+function micGate(host,text,onNext,lead){
+  const strict=save.micRequired, useMic=SR&&!micBlocked;
+  host.innerHTML=`
+    <div class="win">
+      ${lead||''}
+      <p class="big">${esc(text)}</p>
+      <p class="say">${useMic?'🎤を押して、声に出して言ってみよう。':'声に出して1回言ってみよう。'}</p>
+      <p class="heard" id="heard" aria-live="polite"></p>
+      <div class="actions"><button class="btn" id="again">🔊 お手本</button>
+        ${useMic?`<button class="btn mic" id="mic">🎤 言ってみる</button>`: strict?``:`<button class="btn go" id="next">言えた！ 次へ</button>`}</div>
+      ${useMic&&!strict?`<p class="center" style="margin:8px 0 0"><button class="linkbtn" id="skip">マイクを使わずに次へ</button></p>`:''}
+    </div>`;
+  $('#again').onclick=()=>speak(text);
+  const heard=$('#heard'), goNext=()=>{ sfx.tap(); onNext(); };
+  if(!useMic&&strict){ heard.textContent='この画面ではマイクが使えないので先へ進めません。おうちの人に「マイク必須」をオフにしてもらってね。'; return; }
+  if(!useMic){ $('#next').onclick=goNext; return; }
+  if(!strict) $('#skip').onclick=goNext;
+  let tries=0, rec=null; const mic=$('#mic');
+  const toNext=label=>{ mic.classList.remove('on','mic'); mic.classList.add('go'); mic.textContent=label; mic.onclick=goNext; };
+  mic.onclick=()=>{
+    if(rec) return; mic.classList.add('on'); mic.textContent='聞いてるよ…'; fb('聞いてるよ。どうぞ！');
+    rec=listen(text,(said,score)=>{
+      rec=null; mic.classList.remove('on');
+      const need=tries>=3?0.6:0.8;
+      if(score>=need){ S.mic++; sfx.coin(); setBuddy('pb','jump'); heard.className='heard ok'; heard.textContent='聞こえたよ：「'+said+'」'; fb('バッチリ！','ok'); toNext('次へ'); }
+      else { tries++; S.itemMiss++; setBuddy('pb','sad'); heard.className='heard'; heard.textContent='「'+(said||'…')+'」に聞こえたよ';
+        fb(tries>=2?'おしい！ 🔊お手本を聞いてから、もう1回':'もう一度、ゆっくり言ってみよう','ng');
+        if(tries>=3&&!strict) toNext('次へ'); else mic.textContent='🎤 もう一度';
+        if(tries===3) heard.textContent+='（次からは少しゆるく判定するよ）'; }
+    },err=>{
+      rec=null; mic.classList.remove('on');
+      if(['not-allowed','service-not-allowed','start','audio-capture'].includes(err)){
+        micBlocked=true; heard.className='heard';
+        if(strict){ heard.textContent='この画面ではマイクが使えないので先へ進めません。おうちの人に「マイク必須」をオフにしてもらってね。'; mic.remove(); }
+        else { heard.textContent='マイクが使えないみたい。声に出して言えたら次へ進もう。'; toNext('言えた！ 次へ'); }
+      } else { heard.className='heard'; heard.textContent='声が聞こえなかったよ。ボタンを押してから言ってね。'; mic.textContent='🎤 もう一度'; }
+    });
+  };
+}
+
+/* マイクが使えない環境: 声に出す時間をとってから「言えた!」 */
+function selfReport(text,goNext){
+  const b=$('#next'); if(!b) return;
+  const words=text.split(' ').length, wait=Math.max(2,Math.ceil(words*0.6));
+  let left=wait; b.disabled=true; b.textContent=`声に出して言ってね…${left}`;
+  $('#heard').className='heard'; $('#heard').textContent='お手本と同じように、はっきり声に出して言おう';
+  const t=setInterval(()=>{ left--; if(!document.body.contains(b)){clearInterval(t);return}
+    if(left>0) b.textContent=`声に出して言ってね…${left}`;
+    else { clearInterval(t); b.disabled=false; b.textContent='言えた！ 次へ'; b.onclick=()=>{ S.mic++; goNext(); }; } },1000);
+}
+
+/* Lv1 本文音読 (教科書の順) */
+function renderRead(){
+  const it=S.item;
+  app.innerHTML=hud()+`
+    <div class="sign"><p class="ins">${esc(it.sp)} のセリフ　まずお手本を聞こう</p><p class="prompt">${esc(it.en)}</p>
+      <p class="ctx" id="ja" hidden>${esc(it.ja)}</p>
+      <button class="speak must" id="say">🔊 お手本を聞く</button><button class="speak" id="showja">日本語</button></div>
+    <div class="buddyrow">${buddy('pb')}<p class="fb bubble" id="fb">お手本を聞いたら、まねして読んでみよう</p></div>
+    <div id="bottom"></div>`;
+  bindBack();
+  $('#showja').onclick=()=>{ $('#ja').hidden=!$('#ja').hidden; };
+  $('#say').onclick=()=>{ const b=$('#say'); b.classList.remove('must'); b.textContent='🔊 再生中…';
+    speak(it.en,()=>{ b.textContent='🔊 もう一度'; b.classList.add('done');
+      if(!S.solved){ S.solved=true; fb('つぎは自分の番！');
+        micGate($('#bottom'),it.en,()=>{ itemDone(S.itemMiss===0); nextItem(); }); } }); };
+  window.scrollTo(0,0);
+}
+
+/* Lv2 英→日 */
+function renderChoice(){
+  const it=S.item;
+  const opts=shuffle([it,...shuffle(S.q.items.filter(x=>x.ja!==it.ja)).slice(0,3)]);
+  app.innerHTML=hud()+`
+    <div class="sign"><p class="ins">英文を聞いて、意味をえらぼう</p><p class="prompt">${esc(it.en)}</p>
+      <button class="speak must" id="say">🔊 まず聞く</button></div>
+    <div class="buddyrow">${buddy('pb')}<p class="fb bubble" id="fb">まず🔊を押して、音声を聞いてね</p></div>
+    <div class="choices">${opts.map((o,i)=>`<button class="opt" data-i="${i}" disabled>${esc(o.ja)}</button>`).join('')}</div>`;
+  bindBack();
+  $('#say').onclick=()=>{ const b=$('#say'); b.classList.remove('must'); b.textContent='🔊 再生中…';
+    speak(it.en,()=>{ b.textContent='🔊 もう一度聞く'; b.classList.add('done'); app.querySelectorAll('.opt').forEach(o=>o.disabled=false); fb('どの意味かな？'); }); };
+  app.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
+    if(S.solved) return; S.solved=true;
+    const ok=opts[+b.dataset.i].ja===it.ja;
+    app.querySelectorAll('.opt').forEach((o,j)=>{ if(opts[j].ja===it.ja) o.classList.add('good'); o.disabled=true; });
+    if(ok){ sfx.coin(); setBuddy('pb','jump'); fb('正解！','ok'); itemDone(true); setTimeout(nextItem,900); }
+    else { b.classList.add('bad'); S.misses++; sfx.ng(); setBuddy('pb','sad'); fb('おしい！ 緑が正解。あとでもう一回出るよ','ng'); itemDone(false); setTimeout(nextItem,2200); }
+  });
+  window.scrollTo(0,0);
+}
+
+/* Lv3 日→英 ＋ 音読 */
+function renderJE(){
+  const it=S.item;
+  const opts=shuffle([it,...shuffle(S.q.items.filter(x=>x.en!==it.en)).slice(0,3)]);
+  app.innerHTML=hud()+`
+    <div class="sign"><p class="ins">日本語に合う英文をえらぼう</p><p class="prompt">${esc(it.ja)}</p></div>
+    <div class="buddyrow">${buddy('pb')}<p class="fb bubble" id="fb">えらんだら、声に出して言うよ</p></div>
+    <div class="choices" id="ch">${opts.map((o,i)=>`<button class="opt" data-i="${i}">${esc(o.en)}</button>`).join('')}</div>
+    <div id="bottom"></div>`;
+  bindBack();
+  app.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
+    if(S.solved) return; S.solved=true;
+    const ok=opts[+b.dataset.i].en===it.en;
+    app.querySelectorAll('.opt').forEach((o,j)=>{ if(opts[j].en===it.en) o.classList.add('good'); o.disabled=true; });
+    if(ok){ sfx.coin(); setBuddy('pb','jump'); fb('正解！ 声に出して言ってみよう','ok'); }
+    else { b.classList.add('bad'); S.misses++; S.itemMiss++; sfx.ng(); setBuddy('pb','sad'); fb('おしい！ 緑が正解。正しい文を言ってみよう','ng'); }
+    speak(it.en);
+    micGate($('#bottom'),it.en,()=>{ itemDone(S.itemMiss===0); nextItem(); }, ok?'<div class="row"><strong style="color:var(--ok)">正解！</strong></div>':'<div class="row"><strong style="color:var(--ng)">正しい文はこれ</strong></div>');
+    $('#bottom').scrollIntoView({behavior:'smooth',block:'start'});
+  });
+  window.scrollTo(0,0);
+}
+
+/* Lv5 英単語 */
+function renderWord(){
+  const it=S.item, ws=WORDS[S.q.id]||[], ej=it.dir==='ej';
+  const opts=shuffle([it,...shuffle(ws.filter(x=>x.en!==it.en)).slice(0,3)]);
+  app.innerHTML=hud()+`
+    <div class="sign"><p class="ins">${ej?'英単語の意味をえらぼう':'日本語に合う英単語をえらぼう'}</p>
+      <p class="prompt" style="font-size:30px">${esc(ej?it.en:it.ja)}</p>
+      ${ej?`<button class="speak" id="say">🔊 聞く</button>`:''}</div>
+    <div class="buddyrow">${buddy('pb')}<p class="fb bubble" id="fb">${ej?'音も聞いておこう':'つづりをよく見てえらんでね'}</p></div>
+    <div class="choices">${opts.map((o,i)=>`<button class="opt" data-i="${i}">${esc(ej?o.ja:o.en)}</button>`).join('')}</div>`;
+  bindBack();
+  if(ej){ $('#say').onclick=()=>speak(it.en); setTimeout(()=>speak(it.en),150); }
+  app.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
+    if(S.solved) return; S.solved=true;
+    const ok=opts[+b.dataset.i].en===it.en;
+    app.querySelectorAll('.opt').forEach((o,j)=>{ if(opts[j].en===it.en) o.classList.add('good'); o.disabled=true; });
+    if(!ej) speak(it.en);
+    if(ok){ sfx.coin(); setBuddy('pb','jump'); fb(S.combo>=2?`正解！ ${S.combo+1}コンボ`:'正解！','ok'); itemDone(true); setTimeout(nextItem,900); }
+    else { b.classList.add('bad'); S.misses++; sfx.ng(); setBuddy('pb','sad'); fb(`「${it.en}」は「${it.ja}」。あとでもう一回出るよ`,'ng'); itemDone(false); setTimeout(nextItem,2300); }
+  });
+  window.scrollTo(0,0);
+}
+
+function renderPuzzle(){
+  const it=S.item; S.ans=it.en.split(' '); S.picked=[]; S.listened=false;
+  let toks=shuffle(S.ans), g=0; while(toks.join(' ')===S.ans.join(' ') && g++<10) toks=shuffle(S.ans);
+  S.pool=toks.map((t,i)=>({id:i,t,used:false}));
+  app.innerHTML=hud()+`
+    <div class="sign"><p class="ins">日本語に合う英文をつくろう</p><p class="prompt">${esc(it.ja)}</p>
+      <button class="speak must" id="say">🔊 まず聞く</button></div>
+    <div class="rail" id="rail"></div>
+    <div class="buddyrow">${buddy('pb')}<p class="fb bubble" id="fb">まず🔊を押して、音声を聞いてね</p></div>
+    <div class="pool" id="pool"></div>
+    <div id="bottom"><div class="actions">
+      <button class="btn" id="hint">ヒント</button><button class="btn" id="clear">リセット</button><button class="btn primary" id="check">チェック</button>
+    </div></div>`;
+  bindBack();
+  $('#say').onclick=()=>{ const b=$('#say'); b.classList.remove('must'); b.textContent='🔊 再生中…';
+    speak(it.en,()=>{ b.textContent='🔊 もう一度聞く'; b.classList.add('done');
+      if(!S.listened){ S.listened=true; fb('OK！ ブロックを並べてね'); drawTiles(); } }); };
+  $('#hint').onclick=hint; $('#clear').onclick=()=>{ S.picked.forEach(id=>S.pool[id].used=false); S.picked=[]; drawTiles(); };
+  $('#check').onclick=check;
+  if(S.kind==='lesson'){ S.listened=true; const b=$('#say'); b.classList.remove('must'); b.textContent='🔊 聞く(ヒント)'; fb('日本語に合うようにならべよう'); }
+  drawTiles(); window.scrollTo(0,0);
+}
+function drawTiles(){
+  const rail=$('#rail'), pool=$('#pool');
+  rail.innerHTML = S.picked.length ? S.picked.map((id,i)=>`<button class="tile" data-r="${i}">${esc(S.pool[id].t)}</button>`).join('')
+    : '<span class="empty">下のブロックをタップして並べよう</span>';
+  pool.classList.toggle('locked',!S.listened);
+  const ck=$('#check'); if(ck) ck.disabled=!S.listened;
+  pool.innerHTML=S.pool.map(p=>`<button class="tile ${p.used?'used':''}" data-p="${p.id}" ${p.used?'tabindex="-1" aria-hidden="true"':''}>${esc(p.t)}</button>`).join('');
+  rail.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{ if(S.solved) return; sfx.tap(); const id=S.picked.splice(+b.dataset.r,1)[0]; S.pool[id].used=false; drawTiles(); });
+  pool.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{ if(S.solved||!S.listened) return; const p=S.pool[+b.dataset.p]; if(p.used) return;
+    sfx.tap(); p.used=true; S.picked.push(p.id); fb(S.picked.length===S.ans.length?'並べたら「チェック」を押してね':'いいね、その調子'); drawTiles(); });
+}
+const picked=()=>S.picked.map(id=>S.pool[id].t);
+function firstWrong(toks){ let i=0; while(i<toks.length&&i<S.ans.length&&toks[i]===S.ans[i]) i++; return i; }
+function hint(){
+  if(S.solved||!S.listened) return;
+  const toks=picked(), i=firstWrong(toks); S.combo=0; S.itemMiss++;
+  if(i<toks.length){ const el=$('#rail').querySelector(`[data-r="${i}"]`); if(el) el.classList.add('bad');
+    fb(`${i+1}番目から違うよ。赤いブロックをタップして戻そう`,'ng'); setBuddy('pb','sad'); return; }
+  if(i<S.ans.length){ const target=S.pool.find(p=>!p.used&&p.t===S.ans[i]);
+    if(target){ const el=$('#pool').querySelector(`[data-p="${target.id}"]`); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+    fb(`${i+1}番目は光っているブロック`); }
+}
+function check(){
+  if(S.solved) return;
+  const toks=picked();
+  if(!toks.length){ fb('まずブロックを並べよう','ng'); return; }
+  if(toks.join(' ')===S.ans.join(' ')){
+    S.solved=true; const clean=S.itemMiss===0; itemDone(clean);
+    const text=S.item.en; sfx.coin(); speak(text); fb('やったね！','ok'); setBuddy('pb','jump');
+    $('#bottom').innerHTML=`<div class="win"><div class="row"><strong style="color:var(--ok)">正解！</strong>${S.combo>=3?`<span class="pop">${S.combo} コンボ</span>`:''}</div><p class="big">${esc(text)}</p><div class="actions"><button class="btn" id="again">🔊 もう一度</button><button class="btn go" id="next">次へ</button></div></div>`; $('#again').onclick=()=>speak(text); $('#next').onclick=()=>{ sfx.tap(); nextItem(); }; return;
+  }
+  S.misses++; S.itemMiss++; S.combo=0; sfx.ng(); setBuddy('pb','sad');
+  const rail=$('#rail'); rail.classList.remove('shake'); void rail.offsetWidth; rail.classList.add('shake');
+  const i=firstWrong(toks);
+  if(i>=toks.length && toks.length<S.ans.length) fb(`ここまでは合ってる！ ブロックがまだ足りないよ`,'ng');
+  else if(i===0) fb('1番目からちがうよ。🔊でもう一度聞いてみよう','ng');
+  else fb(`前から${i}個は合ってる！ ${i+1}番目を見直そう`,'ng');
+}
+
+/* ---------- 仕組みレッスン ---------- */
+// demo: 各ステップ {t:[タイル], h:[光らせる番号], c:説明}
+// quiz: {q:'choice', s:'She ___ in New York.', o:['live','lives'], a:'lives', e:'説明'} / {q:'order', ja:'日本語', en:'English.'}
+const LESSONS={
+ 4:[
+  {id:'4A',name:'This / That と it',sub:'「これ・あれ」の文と、答えの it',
+   rule:'近くのものは This、遠くのものは That。疑問文は is が先頭にジャンプ。答えるときは this / that が it に変わる。',
+   demo:[
+    {t:['This','is','yokan.'],h:[0],c:'近くのものは This(これ)。'},
+    {t:['That','is','yokan.'],h:[0],c:'遠くのものは That(あれ)。'},
+    {t:['Is','that','yokan?'],h:[0],c:'疑問文は is が先頭にジャンプ! 最後は ? になる。'},
+    {t:['No,','it','isn\'t.'],h:[1],c:'答えるときは that が it に変わる。'}],
+   quiz:[
+    {q:'choice',s:'___ is a drone. (手に持っているドローン)',o:['This','That'],a:'This',e:'近くのもの → This'},
+    {q:'choice',s:'Is this a dog? — No, ___ isn\'t.',o:['it','this','that'],a:'it',e:'答えでは this が it に変わる'},
+    {q:'choice',s:'Is that coffee jelly? — Yes, it ___.',o:['is','isn\'t'],a:'is',e:'Yes のときは is'},
+    {q:'choice',s:'This ___ kitsune udon.',o:['is','are','am'],a:'is',e:'This のあとは is'},
+    {q:'order',ja:'これはうどんですか。',en:'Is this udon?'},
+    {q:'order',ja:'これは油揚げです。',en:'This is deep-fried tofu.'}]},
+  {id:'4B',name:'He / She と Who',sub:'人を言いかえる he / she、「だれ」の who',
+   rule:'2回目からは、男の人は He、女の人は She に言いかえる。「〜はだれですか」は Who を先頭に。',
+   demo:[
+    {t:['This','is','my sister','Aki.'],h:[2],c:'my sister(私の姉[妹])は女の人。'},
+    {t:['She','is','a chef','in Texas.'],h:[0],c:'2回目からは She に言いかえる。'},
+    {t:['Who','is','this lady?'],h:[0],c:'「だれ?」と聞くときは Who が先頭。'},
+    {t:['She\'s','my sister','Aki.'],h:[0],c:'答えは She\'s(= She is)で。'}],
+   quiz:[
+    {q:'choice',s:'This is my uncle. ___ is a programmer.',o:['He','She','It'],a:'He',e:'uncle(おじ)は男の人 → He'},
+    {q:'choice',s:'This is my sister. ___ is a high school student.',o:['He','She','It'],a:'She',e:'sister は女の人 → She'},
+    {q:'choice',s:'___ is this lady? — She\'s my sister Aki.',o:['Who','What'],a:'Who',e:'人をたずねる → Who'},
+    {q:'choice',s:'What is it? — ___ a Japanese traditional dish.',o:['It\'s','She\'s','He\'s'],a:'It\'s',e:'もの(茶わんむし)なので It\'s'},
+    {q:'order',ja:'この女の人はだれですか。',en:'Who\'s this lady?'},
+    {q:'order',ja:'彼女はテキサスでシェフをしています。',en:'She\'s a chef in Texas.'}]}
+ ],
+ 5:[
+  {id:'5A',name:'三単現の s',sub:'he / she が主語だと、動詞に s がつく',
+   rule:'主語が he / she / 1人の名前(三人称・単数)のとき、動詞に s をつける。I・you・2人以上のときはつけない。',
+   demo:[
+    {t:['I','play','tennis.'],h:[1],c:'I が主語なら play のまま。'},
+    {t:['She','plays','tennis.'],h:[0,1],c:'主語が She になると、play に s がついて plays!'},
+    {t:['She','lives','in New York.'],h:[1],c:'本文でも、She のあとは lives。'},
+    {t:['Students and teachers','spend','the day in pajamas.'],h:[0,1],c:'2人以上(複数)なら s はつかない。'}],
+   quiz:[
+    {q:'choice',s:'She ___ in New York.',o:['live','lives'],a:'lives',e:'She は三人称・単数 → lives'},
+    {q:'choice',s:'I ___ my school uniform.',o:['like','likes'],a:'like',e:'I のときは s をつけない'},
+    {q:'choice',s:'My uncle often ___ about it.',o:['talk','talks'],a:'talks',e:'My uncle(1人)→ talks'},
+    {q:'choice',s:'Students and teachers ___ the day in pajamas.',o:['spend','spends'],a:'spend',e:'2人以上なので s はつかない'},
+    {q:'choice',s:'Ken ___ to school by bus. (go)',o:['gos','goes','go'],a:'goes',e:'go は es をつけて goes'},
+    {q:'choice',s:'Eri ___ English every day. (study)',o:['studys','studies','study'],a:'studies',e:'study は y を i にかえて studies'},
+    {q:'order',ja:'彼女はニューヨークに住んでいます。',en:'She lives in New York.'}]},
+  {id:'5B',name:'doesn\'t と Does ～?',sub:'三単現の否定文と疑問文',
+   rule:'否定文は doesn\'t、疑問文は Does を先頭に。どちらも動詞の s は消えて、もとの形にもどる。',
+   demo:[
+    {t:['She','likes','her uniform.'],h:[1],c:'ふつうの文は likes(s つき)。'},
+    {t:['She','doesn\'t','like','her uniform.'],h:[1,2],c:'否定文は doesn\'t を入れて、likes の s が消える!'},
+    {t:['Does','she','like','her uniform?'],h:[0,2],c:'疑問文は Does が先頭。ここでも s は消える。'},
+    {t:['No,','she','doesn\'t.'],h:[2],c:'答えは does / doesn\'t を使う。'}],
+   quiz:[
+    {q:'choice',s:'She doesn\'t ___ her school uniform.',o:['like','likes'],a:'like',e:'doesn\'t のあとは s のつかない形'},
+    {q:'choice',s:'___ he work in pajamas all day?',o:['Is','Does','Do'],a:'Does',e:'he が主語の一般動詞の疑問文 → Does'},
+    {q:'choice',s:'Does he work in pajamas? — Yes, he ___.',o:['is','does','do'],a:'does',e:'Does で聞かれたら does で答える'},
+    {q:'choice',s:'Does Jenny like her uniform? — No, she ___.',o:['doesn\'t','isn\'t','don\'t'],a:'doesn\'t',e:'No のときは doesn\'t'},
+    {q:'choice',s:'Does your brother ___ clothes?',o:['make','makes'],a:'make',e:'Does があるので s はつけない'},
+    {q:'order',ja:'彼は一日中パジャマで働きますか。',en:'Does he work in pajamas all day?'},
+    {q:'order',ja:'彼女は制服が好きではありません。',en:'She doesn\'t like her school uniform.'}]}
+ ],
+ 6:[
+  {id:'6A',name:'him / her / them',sub:'「〜を・〜に」の形の代名詞',
+   rule:'動詞や with のあとでは、he → him、she → her、they → them に形が変わる。',
+   demo:[
+    {t:['I','respect','Jackson.'],h:[2],c:'Jackson をくり返したくないときは…'},
+    {t:['I','respect','him.'],h:[2],c:'him(彼を)に言いかえる!'},
+    {t:['He','walks','with','his sister.'],h:[3],c:'his sister は女の人。'},
+    {t:['He','walks','with','her.'],h:[3],c:'with のあとは her(彼女と)。'},
+    {t:['He','often','helps','them.'],h:[3],c:'2人以上なら them(彼らを)。'}],
+   quiz:[
+    {q:'choice',s:'This is Jackson. I respect ___.',o:['he','him','his'],a:'him',e:'respect のあと → him'},
+    {q:'choice',s:'He goes to school with ___. (彼女と)',o:['she','her','hers'],a:'her',e:'with のあと → her'},
+    {q:'choice',s:'He has many good friends. He often helps ___.',o:['they','them','their'],a:'them',e:'helps のあと、複数 → them'},
+    {q:'choice',s:'Do you know that girl? — No. I don\'t know ___.',o:['she','her'],a:'her',e:'know のあと → her'},
+    {q:'choice',s:'Whose pen is this? — It\'s ___. (私のもの)',o:['my','me','mine'],a:'mine',e:'「私のもの」は mine'},
+    {q:'order',ja:'私は彼を尊敬しています。',en:'I respect him.'},
+    {q:'order',ja:'彼のことを教えて。',en:'Tell me about him.'}]},
+  {id:'6B',name:'Why ～? — Because ～.',sub:'理由をたずねる・答える',
+   rule:'「なぜ?」は Why を先頭に置いて疑問文を続ける。答えは Because(〜だから)で始める。',
+   demo:[
+    {t:['It','is','dangerous.'],h:[1],c:'ふつうの文。'},
+    {t:['Is','it','dangerous?'],h:[0],c:'疑問文にして…'},
+    {t:['Why','is','it','dangerous?'],h:[0],c:'先頭に Why をつけると「なぜ危険なの?」'},
+    {t:['Because','elephants','sometimes attack','schoolchildren.'],h:[0],c:'答えは Because で始める。'}],
+   quiz:[
+    {q:'choice',s:'___ is it dangerous? — Because elephants attack schoolchildren.',o:['Why','What','Who'],a:'Why',e:'理由をたずねる → Why'},
+    {q:'choice',s:'Why does Jackson go to school? — ___ he has a dream.',o:['Because','So','And'],a:'Because',e:'理由の答え → Because'},
+    {q:'choice',s:'Why ___ you like him?',o:['do','does','is'],a:'do',e:'主語 you → do'},
+    {q:'choice',s:'Why ___ Jackson go to school?',o:['do','does'],a:'does',e:'主語 Jackson(三人称・単数)→ does'},
+    {q:'order',ja:'なぜジャクソンは学校に行くのですか。',en:'Why does Jackson go to school?'},
+    {q:'order',ja:'彼には夢があるからです。',en:'Because he has a dream.'}]}
+ ],
+ 7:[
+  {id:'7A',name:'There is / There are',sub:'「〜があります・〜がいます」',
+   rule:'1つ(単数)なら There is、2つ以上(複数)なら There are。疑問文は is / are が先頭。',
+   demo:[
+    {t:['There','is','a famous place','in Sydney.'],h:[1,2],c:'1つ(a famous place)なら is。'},
+    {t:['There','are','a lot of unique animals','in Australia.'],h:[1,2],c:'たくさんなら are に切りかわる!'},
+    {t:['Are','there','any parks','near your house?'],h:[0],c:'疑問文は are が先頭にジャンプ。'},
+    {t:['Yes,','there','are.'],h:[2],c:'答えも there を使う。'}],
+   quiz:[
+    {q:'choice',s:'There ___ a famous place in Sydney.',o:['is','are'],a:'is',e:'a famous place(1つ)→ is'},
+    {q:'choice',s:'There ___ a lot of unique animals in Australia.',o:['is','are'],a:'are',e:'a lot of 〜(たくさん)→ are'},
+    {q:'choice',s:'There ___ three parks near my house.',o:['is','are'],a:'are',e:'three parks(3つ)→ are'},
+    {q:'choice',s:'There ___ a steak restaurant over there.',o:['is','are'],a:'is',e:'a steak restaurant(1つ)→ is'},
+    {q:'choice',s:'___ there a library in your town? — Yes, there is.',o:['Is','Are'],a:'Is',e:'a library(1つ)→ Is'},
+    {q:'order',ja:'シドニーに有名な場所があります。',en:'There is a famous place in Sydney.'},
+    {q:'order',ja:'オーストラリアにはめずらしい動物がたくさんいます。',en:'There are a lot of unique animals in Australia.'}]},
+  {id:'7B',name:'How ～? — By ～.',sub:'「どうやって?」と手段の答え',
+   rule:'「どうやって〜?」は How を先頭に。乗り物で答えるときは By(〜で)を使う。',
+   demo:[
+    {t:['I','can','go','there.'],h:[1],c:'ふつうの文。'},
+    {t:['How','can','I','go','there?'],h:[0,1],c:'How を先頭にして、can も前へ!'},
+    {t:['By','helicopter','or','seaplane.'],h:[0],c:'乗り物の答えは By 〜。'}],
+   quiz:[
+    {q:'choice',s:'___ can I go there? — By helicopter.',o:['How','What','Why'],a:'How',e:'方法をたずねる → How'},
+    {q:'choice',s:'How do you go to Fukuoka? — ___ plane.',o:['By','On','With'],a:'By',e:'乗り物 → By'},
+    {q:'choice',s:'How do you come to school? — I come to school ___ bike.',o:['by','in','at'],a:'by',e:'by bike(自転車で)'},
+    {q:'choice',s:'How ___ you go to school?',o:['do','does','are'],a:'do',e:'主語 you → do'},
+    {q:'order',ja:'どうやってそこに行けますか。',en:'How can I go there?'},
+    {q:'order',ja:'ヘリコプターか水上飛行機でです。',en:'By helicopter or seaplane.'}]}
+ ]
+};
+const findLesson=id=>{for(const k in LESSONS)for(const L of LESSONS[k])if(L.id===id)return L};
+function startLesson(L){
+  S={kind:'lesson',L,title:L.name,queue:shuffle(L.quiz).map((it,k)=>({...it,_id:k})),retried:new Set(),missItems:new Set(),misses:0,combo:0,best:0,mic:0,total:L.quiz.length,done:0};
+  showDemo(L,0);
+}
+function showDemo(L,i){
+  const st=L.demo[i], prev=i>0?L.demo[i-1].t:[];
+  const sent=st.t.join(' ');
+  app.innerHTML=`<div class="hud"><button class="back" id="back">マップ</button><span class="name">${esc(L.name)}</span><span class="meta">しくみ ${i+1}/${L.demo.length}</span></div>
+   <div class="card"><h2>${esc(L.name)}</h2><p class="small">${esc(L.sub)}</p>
+     <div class="rail demo" id="drail">${st.t.map((w,j)=>`<span class="tile ${st.h.includes(j)?'gold':''} ${prev.includes(w)?'':'newtile'}">${esc(w)}</span>`).join('')}</div>
+     <div class="buddyrow">${buddy('db')}<p class="fb bubble" style="font-size:16px">${esc(st.c)}</p></div>
+     <div class="actions"><button class="btn" id="dsay">🔊 聞く</button><button class="btn primary" id="dnext">${i<L.demo.length-1?'つぎへ ▶':'ルールのまとめへ ▶'}</button></div>
+   </div>`;
+  bindBack(); setBuddy('db', i?'jump':''); speak(sent.replace(/ — /g,', '));
+  $('#dsay').onclick=()=>speak(sent);
+  $('#dnext').onclick=()=>{ sfx.tap(); if(i<L.demo.length-1) showDemo(L,i+1); else showRule(L); };
+  window.scrollTo(0,0);
+}
+function showRule(L){
+  app.innerHTML=`<div class="hud"><button class="back" id="back">マップ</button><span class="name">${esc(L.name)}</span></div>
+   <div class="card center">${buddy('rb2','cheer')}<h2>ルールのまとめ</h2><p style="font-size:18px;font-weight:700;line-height:1.7;text-align:left">${esc(L.rule)}</p></div>
+   <div class="actions"><button class="btn" id="redo">しくみをもう一度</button><button class="btn go" id="qgo">問題にチャレンジ ▶</button></div>`;
+  bindBack();
+  $('#redo').onclick=()=>showDemo(L,0);
+  $('#qgo').onclick=()=>{ sfx.tap(); nextItem(); };
+  window.scrollTo(0,0);
+}
+function fillBlank(s,a){ return s.replace(/\s*\(.*?\)\s*$/,'').replace('___',a); }
+function renderConcept(){
+  const it=S.item, opts=shuffle(it.o);
+  const shown=esc(it.s).replace('___','<span class="blank">　?　</span>');
+  app.innerHTML=hud()+`
+    <div class="sign"><p class="ins">( ? )に入るものをえらぼう</p><p class="prompt" style="font-size:20px">${shown}</p></div>
+    <div class="buddyrow">${buddy('pb')}<p class="fb bubble" id="fb">ルールを思い出してね</p></div>
+    <div class="choices">${opts.map((o,i)=>`<button class="opt" data-i="${i}" style="font-size:20px;text-align:center">${esc(o)}</button>`).join('')}</div>
+    <div id="bottom"></div>`;
+  bindBack();
+  app.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
+    if(S.solved) return; S.solved=true;
+    const ok=opts[+b.dataset.i]===it.a;
+    app.querySelectorAll('.opt').forEach((o,j)=>{ if(opts[j]===it.a) o.classList.add('good'); o.disabled=true; });
+    const full=fillBlank(it.s,it.a);
+    if(ok){ sfx.coin(); setBuddy('pb','jump'); fb('正解！ '+it.e,'ok'); }
+    else { b.classList.add('bad'); S.misses++; sfx.ng(); setBuddy('pb','sad'); fb('おしい！ '+it.e,'ng'); }
+    itemDone(ok); speak(full);
+    $('#bottom').innerHTML=`<div class="win"><p class="big">${esc(full)}</p><div class="actions"><button class="btn" id="again">🔊 もう一度</button><button class="btn go" id="next">次へ</button></div></div>`;
+    $('#again').onclick=()=>speak(full); $('#next').onclick=()=>{ sfx.tap(); nextItem(); };
+  });
+  window.scrollTo(0,0);
+}
+
+/* ---------- result ---------- */
+function showResult(){
+  const mi=S.missItems.size, n= mi===0?3 : mi<=2?2 : 1;
+  if(S.kind==='lesson'){ const L=S.L, prev=save.lessons[L.id]; save.lessons[L.id]={stars:Math.max(prev?prev.stars:0,n)}; persist(); sfx.fan();
+    const sib=Object.values(LESSONS).find(a=>a.some(x=>x.id===L.id)), nx=sib[sib.indexOf(L)+1];
+    app.innerHTML=`<div class="card center">${buddy('rb','cheer')}<h2>${esc(L.name)} クリア</h2><div class="bigstars">${starStr(n)}</div>
+      <p>${n===3?'ノーミス! ルールはばっちり。':n===2?'いいね。あと少し。':'クリア! もう一度やるとルールが身につくよ。'}</p>
+      <p class="small" style="text-align:left;background:#fffaf0;border-radius:10px;padding:10px">${esc(L.rule)}</p></div>
+      <div class="actions"><button class="btn" id="retry">もう一度</button>${nx?`<button class="btn go" id="to">次：${esc(nx.name)}</button>`:`<button class="btn go" id="to">本文へ進む</button>`}</div>
+      <p class="center"><button class="linkbtn" id="map">マップへ戻る</button></p>`;
+    $('#retry').onclick=()=>startLesson(L); $('#to').onclick=()=> nx? startLesson(nx) : showMap(); $('#map').onclick=showMap; window.scrollTo(0,0); return; }
+  const pp=P(S.q.id), prev=pp.lv[S.l];
+  pp.lv[S.l]={stars:Math.max(prev?prev.stars:0,n)}; persist(); sfx.fan();
+  const msg= n===3?'ノーミス！ 完ぺき。': n===2?'いいね。あと少しでノーミス。':'クリア！ もう一度やると星が増えるかも。';
+  const nx=S.l<MAXLV, q=S.q, l=S.l;
+  app.innerHTML=`
+    <div class="card center">${buddy('rb','cheer')}
+      <h2>${q.name} ${LV[l].name} クリア</h2>
+      <div class="bigstars">${starStr(n)}</div>
+      <p>${msg}${!prev?'<br><span class="pop">初クリア！</span>':''}</p>
+      <p class="small">ミス ${S.misses}回　最大コンボ ${S.best}${S.mic?`　音読 ${S.mic}回`:''}</p>
+    </div>
+    <div class="actions"><button class="btn" id="retry">もう一度</button>
+      ${nx?`<button class="btn go" id="to">次：${LV[l+1].name}</button>`:`<button class="btn go" id="to">紙ミッションへ</button>`}</div>
+    <p class="center"><button class="linkbtn" id="map">マップへ戻る</button></p>`;
+  $('#retry').onclick=()=>startLevel(q,l);
+  $('#to').onclick=()=> nx? startLevel(q,l+1) : showPaper(q);
+  $('#map').onclick=showMap;
+  window.scrollTo(0,0);
+}
+
+/* ---------- paper ---------- */
+function showPaper(q){
+  const pp=P(q.id);
+  app.innerHTML=`
+    <div class="hud"><button class="back" id="back">マップ</button><span class="name">${q.name} 紙ミッション</span></div>
+    <div class="card"><h2>ノートに書こう</h2>
+      <p class="small">日本語を見て、ノートに英文を書く。単語と単語の間はちゃんと空けよう。書けたら「答えを見る」で丸つけして、チェック。</p>
+      ${q.items.map((it,i)=>`<label class="pitem"><input type="checkbox" data-i="${i}" ${pp.paper[i]?'checked':''}>
+        <span><span class="no">${i+1}</span>${esc(it.ja)}<span class="ans" hidden id="a${i}">${esc(it.en)}</span><br>
+        <button type="button" class="linkbtn" data-show="${i}">答えを見る</button></span></label>`).join('')}
+    </div><p class="center small" id="pdone"></p>`;
+  $('#back').onclick=showMap;
+  const upd=()=>{ const c=q.items.filter((_,i)=>pp.paper[i]).length; $('#pdone').textContent= c===q.items.length?'全部できた！ おつかれさま。':`${c} / ${q.items.length}`; };
+  app.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.onchange=()=>{ pp.paper[cb.dataset.i]=cb.checked; persist(); if(cb.checked) sfx.coin(); upd(); });
+  app.querySelectorAll('[data-show]').forEach(b=>b.onclick=e=>{ e.preventDefault(); const a=$('#a'+b.dataset.show); a.hidden=false; b.remove(); speak(a.textContent); });
+  upd(); window.scrollTo(0,0);
+}
+
+if('speechSynthesis' in window){ speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged=()=>{}; }
+showMap();
+</script>
+</body>
+</html>

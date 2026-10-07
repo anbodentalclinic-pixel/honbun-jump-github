@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>英単語クラフト</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛏️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#2a2622; --bg2:#35302b; --panel:#efe6d6; --panel2:#e2d6c1; --ink:#221d18; --ink-soft:#6b5f52;
+  --on-dark:#f3ece0; --on-dark-soft:#bfb3a2; --edge:#14110e;
+  --stone:#8d8f94; --stone-d:#6e7075; --dirt:#8a5f3d; --dirt-d:#6c4a2f; --grass:#5fa045;
+  --copper:#d0814a; --iron:#ddd6cb; --gold:#f2c230; --ruby:#e0405a;
+  --ok:#5fbf6a; --miss:#e5484d;
+  --display:"DotGothic16","Hiragino Kaku Gothic ProN","Yu Gothic",monospace;
+  --body:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Yu Gothic",sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){ --bg:#3a342e; --bg2:#463f37; }
+}
+:root[data-theme="light"]{ --bg:#3a342e; --bg2:#463f37; }
+:root[data-theme="dark"]{ --bg:#2a2622; --bg2:#35302b; }
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--on-dark);font-family:var(--body);font-weight:500;line-height:1.6}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.wrap{max-width:980px;margin:0 auto;padding:18px 16px 40px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.logo{font-family:var(--display);font-weight:400;font-size:clamp(28px,4.4vw,40px);margin:0;line-height:1.15}
+.logo small{display:block;font-family:var(--body);font-size:14px;color:var(--on-dark-soft)}
+.ghost{background:transparent;border:2px solid var(--on-dark-soft);border-radius:4px;padding:6px 12px;font-size:14px}
+.note{font-size:14px;color:var(--on-dark-soft);margin:6px 0 0}
+
+/* base (拠点) */
+.base{margin-top:16px;background:linear-gradient(#6fa9d6,#a9d3ef 70%);border:3px solid var(--edge);border-radius:4px;overflow:hidden;position:relative}
+.base-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px;background:rgba(20,17,14,.55)}
+.base-head h2{font-family:var(--display);font-weight:400;font-size:20px;margin:0}
+.base-head .prog{font-size:14px;color:var(--on-dark)}
+.grid{display:grid;grid-template-columns:repeat(64,1fr);grid-template-rows:repeat(16,1fr);aspect-ratio:64/16;width:100%}
+.cell{width:100%;height:100%}
+.cell{position:relative}
+.cell.plan{outline:1px dashed rgba(255,255,255,.35);outline-offset:-2px}
+.cell.on{box-shadow:inset -2px -2px 0 rgba(0,0,0,.25),inset 2px 2px 0 rgba(255,255,255,.18)}
+.cell.new{animation:pop .5s}
+@keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.25)}100%{transform:scale(1)}}
+.inv{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.ore{display:flex;align-items:center;gap:6px;background:var(--bg2);border:2px solid var(--edge);border-radius:4px;padding:4px 10px;font-family:var(--display);font-size:16px}
+.ore i{width:16px;height:16px;display:inline-block;border:2px solid var(--edge)}
+
+/* mine map */
+.layer{margin-top:22px;border:3px solid var(--edge);border-radius:4px;overflow:hidden}
+.layer-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;padding:10px 14px;background:var(--bg2)}
+.layer-head h2{font-family:var(--display);font-weight:400;font-size:21px;margin:0}
+.layer-head .stars{font-family:var(--display);font-size:17px}
+.shafts{display:flex;gap:10px;padding:18px 12px 16px;overflow-x:auto;
+  background-color:var(--dirt-d);
+  background-image:linear-gradient(45deg,rgba(0,0,0,.12) 25%,transparent 25% 75%,rgba(0,0,0,.12) 75%),linear-gradient(45deg,rgba(0,0,0,.12) 25%,transparent 25% 75%,rgba(0,0,0,.12) 75%);
+  background-size:24px 24px;background-position:0 0,12px 12px}
+.node{flex:1;min-width:96px;display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:0;padding:0}
+.blk{width:100%;max-width:110px;aspect-ratio:1/1;border:3px solid var(--edge);position:relative;
+  background-color:var(--stone);
+  background-image:linear-gradient(var(--ore,transparent),var(--ore,transparent)),linear-gradient(var(--ore,transparent),var(--ore,transparent)),linear-gradient(var(--ore,transparent),var(--ore,transparent)),linear-gradient(var(--ore,transparent),var(--ore,transparent)),linear-gradient(135deg,rgba(255,255,255,.12),rgba(0,0,0,.18));
+  background-size:12% 12%,10% 10%,12% 12%,9% 9%,100% 100%;background-position:16% 18%,84% 22%,22% 84%,80% 80%,0 0;background-repeat:no-repeat;
+  box-shadow:inset -6px -6px 0 rgba(0,0,0,.25),inset 6px 6px 0 rgba(255,255,255,.15);
+  display:flex;align-items:center;justify-content:center;transition:transform .12s}
+.node:hover .blk{transform:translateY(-4px)}
+.blk b{font-family:var(--display);font-weight:400;font-size:24px;color:#fff;text-shadow:2px 2px 0 var(--edge)}
+.node .lbl{font-size:13px;font-weight:700;color:var(--on-dark);text-align:center;line-height:1.25}
+.node .st{font-size:13px;letter-spacing:1px;color:var(--gold);height:18px}
+.layer.locked{opacity:.6}
+.layer.locked .lock{padding:12px 14px;font-size:14px;color:var(--on-dark-soft);background:var(--bg2);border-top:2px solid var(--edge)}
+.legend{margin-top:14px;font-size:13px;color:var(--on-dark-soft)}
+
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(8,6,4,.65);display:none;align-items:center;justify-content:center;padding:16px;z-index:20}
+.modal.on{display:flex}
+.sheet{background:var(--panel);color:var(--ink);border:3px solid var(--edge);border-radius:4px;max-width:580px;width:100%;max-height:90%;overflow:auto;padding:20px;box-shadow:inset -5px -5px 0 var(--panel2)}
+.sheet h3{font-family:var(--display);font-weight:400;font-size:24px;margin:0}
+.sheet .sub{color:var(--ink-soft);font-size:14px;margin:2px 0 14px}
+.levels{display:grid;gap:8px}
+.lv{display:grid;grid-template-columns:56px 1fr auto;align-items:center;gap:12px;text-align:left;background:#fffaf0;border:2px solid var(--edge);border-radius:3px;padding:9px 12px;color:var(--ink)}
+.lv:not([disabled]):hover{background:#fff}
+.lv[disabled]{opacity:.45;cursor:not-allowed}
+.lv .n{font-family:var(--display);font-size:20px;text-align:center}
+.lv .t{font-weight:800}
+.lv .d{font-size:13px;color:var(--ink-soft);display:block;font-weight:500}
+.lv .rec{font-family:var(--display);font-size:15px;text-align:right;white-space:nowrap}
+.lv .drop{font-size:12px;color:var(--ink-soft)}
+.peek{margin-top:14px;font-size:13px;color:var(--ink-soft);line-height:1.9}
+.peek .must{color:var(--ink);font-weight:800}
+.row-btns{display:flex;gap:10px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+.btn{border:3px solid var(--edge);background:var(--gold);border-radius:3px;padding:8px 18px;font-weight:800;color:var(--ink);box-shadow:inset -3px -3px 0 rgba(0,0,0,.2)}
+.btn.sec{background:#fffaf0}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{border-bottom:1px solid #cbbfa9;padding:6px 4px;text-align:left}
+.tbl{overflow-x:auto}
+
+/* game */
+#game{display:none}
+.hud{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-family:var(--display);font-size:17px}
+.hud .where{font-size:15px;color:var(--on-dark-soft)}
+.hud .vals{display:flex;gap:16px;flex-wrap:wrap}
+.hud .m{color:var(--miss)}
+.hud #hudBest{color:var(--gold)}
+.hud #hudBest.over{color:var(--on-dark-soft)}
+.mine{margin-top:14px;border:3px solid var(--edge);border-radius:4px;padding:22px 18px 18px;text-align:center;min-height:400px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;position:relative;overflow:hidden;
+  background-color:#3b3530;
+  background-image:linear-gradient(45deg,rgba(0,0,0,.18) 25%,transparent 25% 75%,rgba(0,0,0,.18) 75%),linear-gradient(45deg,rgba(0,0,0,.18) 25%,transparent 25% 75%,rgba(0,0,0,.18) 75%);
+  background-size:36px 36px;background-position:0 0,18px 18px}
+.prompt-ja{font-size:clamp(24px,4.2vw,38px);font-weight:800;line-height:1.35;max-width:24em;text-shadow:2px 2px 0 var(--edge)}
+.prompt-en{font-size:clamp(28px,5vw,44px);font-weight:800;text-shadow:2px 2px 0 var(--edge)}
+.must-tag{font-size:13px;font-weight:800;background:var(--gold);color:var(--ink);border:2px solid var(--edge);padding:0 10px}
+.speak{border:2px solid var(--on-dark-soft);background:rgba(0,0,0,.3);border-radius:3px;padding:4px 12px;font-size:14px;font-weight:700}
+.target{position:relative;width:118px;height:118px}
+.target .blk{max-width:none;width:118px;transition:transform .08s}
+.target .blk.hit{transform:rotate(-4deg) scale(.96)}
+.target svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.target svg path{stroke:var(--edge);stroke-width:4;fill:none;stroke-linecap:square;opacity:0;transition:opacity .1s}
+.target.broken .blk{animation:breakaway .35s forwards}
+@keyframes breakaway{to{transform:scale(.2);opacity:0}}
+.bit{position:absolute;width:14px;height:14px;border:2px solid var(--edge);left:52px;top:52px;animation:fly .6s ease-out forwards}
+@keyframes fly{to{transform:translate(var(--dx),var(--dy)) rotate(200deg);opacity:0}}
+.gain{position:absolute;left:50%;top:6px;transform:translateX(-50%);font-family:var(--display);font-size:22px;white-space:nowrap;animation:rise 1s forwards;text-shadow:2px 2px 0 var(--edge)}
+@keyframes rise{to{transform:translate(-50%,-34px);opacity:0}}
+.slots{display:flex;flex-wrap:wrap;justify-content:center;gap:5px 4px;max-width:100%}
+.slot{min-width:30px;height:48px;border-bottom:4px solid #6d645a;font-size:34px;font-weight:800;display:flex;align-items:flex-end;justify-content:center;padding:0 2px;line-height:1.15;color:var(--on-dark)}
+.slot.done{border-color:var(--ok)}
+.slot.cur{border-color:var(--gold);animation:blink 1s steps(2) infinite}
+.slot.hintch{color:#8a8075}
+.slot.sp{min-width:18px;border-bottom-style:dotted}
+@keyframes blink{50%{border-color:#6d645a}}
+.shake{animation:shake .25s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:640px}
+.choice{text-align:left;border:3px solid var(--edge);background:var(--panel);color:var(--ink);border-radius:3px;padding:10px 12px;font-size:18px;font-weight:700;display:flex;gap:10px;align-items:center;box-shadow:inset -3px -3px 0 var(--panel2)}
+.choice .k{font-family:var(--display);font-size:16px;border:2px solid var(--edge);width:28px;height:28px;display:grid;place-items:center;flex:none;background:#fffaf0}
+.choice.good{background:#bfe8c4}
+.choice.bad{background:#f5c2c4}
+.built{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;min-height:52px;max-width:100%}
+.bslot{min-width:56px;height:46px;border-bottom:4px solid #6d645a;font-size:28px;font-weight:800;padding:0 4px;display:flex;align-items:flex-end;justify-content:center}
+.bslot.done{border-color:var(--ok)}
+.bslot.cur{border-color:var(--gold);animation:blink 1s steps(2) infinite}
+.tiles{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;max-width:760px}
+.tile{display:flex;align-items:center;gap:8px;border:3px solid var(--edge);background:var(--stone);color:#fff;font-size:22px;font-weight:800;padding:8px 14px;text-shadow:2px 2px 0 var(--edge);box-shadow:inset -4px -4px 0 rgba(0,0,0,.25),inset 4px 4px 0 rgba(255,255,255,.15)}
+.tile .k{font-family:var(--display);font-size:13px;background:var(--edge);color:var(--gold);padding:0 5px;text-shadow:none}
+.tile:not([disabled]):hover{transform:translateY(-3px)}
+.tile.used{visibility:hidden}
+.tile.glow{outline:3px solid var(--gold);outline-offset:2px}
+.reader{display:grid;gap:6px}
+.rline{display:grid;grid-template-columns:96px 1fr;gap:10px;text-align:left;background:#fffaf0;border:2px solid var(--edge);padding:8px 10px;color:var(--ink)}
+.rline:hover{background:#fff}
+.rline .sp{font-size:13px;color:var(--ink-soft);font-weight:700;padding-top:3px}
+.rline .en{display:block;font-size:19px;font-weight:800}
+.rline .ja{display:none;font-size:14px;color:var(--ink-soft)}
+.showja .rline .ja{display:block}
+.flash{font-size:16px;color:var(--on-dark-soft);min-height:26px}
+.track{display:flex;gap:3px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+.track span{width:14px;height:14px;border:2px solid var(--edge);background:#4a433c}
+.track span.got{background:var(--stone)}
+.help{text-align:center;font-size:13px;color:var(--on-dark-soft);margin-top:10px}
+.hero{margin-top:14px;background:var(--panel);color:var(--ink);border:3px solid var(--edge);padding:14px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;box-shadow:inset -5px -5px 0 var(--panel2)}
+.hero .what{flex:1;min-width:240px}
+.hero .what small{display:block;color:var(--ink-soft);font-size:13px;font-weight:700}
+.hero .what b{display:block;font-size:22px;line-height:1.3}
+.hero .what span{font-size:14px;color:var(--ink-soft)}
+.gobtn{border:3px solid var(--edge);background:var(--gold);color:var(--ink);font-size:20px;font-weight:800;padding:12px 26px;box-shadow:inset -4px -4px 0 rgba(0,0,0,.2);animation:pulse2 1.6s infinite}
+.hb.help{background:#fffaf0}
+.layer-head{cursor:pointer}
+.layer-head .tog{font-size:13px;color:var(--on-dark-soft);margin-left:8px}
+.layer.closed .shafts{display:none}
+.steps{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 10px}
+.step{display:flex;align-items:center;gap:8px;background:#fffaf0;border:2px solid var(--edge);padding:6px 12px;font-weight:800}
+.step .n{width:24px;height:24px;border-radius:50%;background:var(--ink);color:#fffaf0;display:grid;place-items:center;font-size:14px;flex:none}
+.holding{display:flex;align-items:center;gap:12px;background:#fffaf0;border:3px solid var(--edge);padding:8px 12px;margin-bottom:8px}
+.holding i{width:40px;height:40px;border:3px solid var(--edge);display:inline-block;flex:none}
+.holding .e{font-size:36px;line-height:1}
+.holding b{font-size:18px}
+.holding span{font-size:13px;color:var(--ink-soft);display:block}
+.bigtool{border:3px solid var(--edge);background:#fffaf0;padding:8px 16px;font-weight:800;font-size:16px}
+.bigtool.on{background:var(--ink);color:#fffaf0}
+.cell.plan.cur{background:color-mix(in srgb,var(--pc) 45%,transparent);outline:1.5px dashed rgba(255,255,255,.95);outline-offset:-2px}
+.cell.plan.other{background:color-mix(in srgb,var(--pc) 14%,transparent);outline:1px dashed rgba(255,255,255,.35);outline-offset:-1px}
+.goal{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 8px}
+.goal .g{border:2px solid var(--edge);background:#fffaf0;padding:3px 10px;font-size:13px;font-weight:700;color:var(--ink)}
+.goal .g.now{background:var(--gold)}
+.goal .g.done{background:#bfe8c4}
+.bgrid.placing .cell.emp:hover{background:var(--pv);outline:2px solid #fff}
+.bgrid.breaking .cell:not(.emp):hover{outline:3px solid var(--miss);opacity:.6}
+.pal.cant{opacity:.45}
+.helpgrid{display:grid;gap:8px}
+.hcard{display:flex;gap:12px;align-items:flex-start;background:#fffaf0;border:2px solid var(--edge);padding:10px 12px}
+.hcard .ic{font-size:30px;line-height:1;flex:none;width:40px;text-align:center}
+.hcard b{display:block;font-size:16px}
+.hcard span{font-size:14px;color:var(--ink-soft);line-height:1.5}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.chip{display:inline-flex;align-items:center;gap:5px;border:2px solid var(--edge);background:#fffaf0;padding:1px 8px;font-size:13px;font-weight:700;color:var(--ink)}
+.chip i{width:12px;height:12px;border:2px solid var(--edge);display:inline-block}
+.empty-base{position:absolute;left:0;right:0;top:50%;text-align:center;font-weight:800;color:#1b2b4b;text-shadow:0 1px 0 #fff;display:none}
+.base{position:relative}
+.homebar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.hb{border:3px solid var(--edge);padding:8px 14px;font-weight:800;color:var(--ink);box-shadow:inset -3px -3px 0 rgba(0,0,0,.2);position:relative}
+.hb.build{background:var(--gold)}.hb.chest{background:#ffb26b}.hb.dex{background:#9fd8a8}
+.hb .badge{position:absolute;top:-10px;right:-10px;background:var(--miss);color:#fff;border:2px solid var(--edge);border-radius:999px;font-size:12px;padding:0 7px;animation:pulse2 1s infinite}
+@keyframes pulse2{50%{transform:scale(1.15)}}
+.cell .em{display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:min(1.2vw,14px);line-height:1}
+.sheet.wide{max-width:1100px}
+.bgrid{display:grid;grid-template-columns:repeat(64,1fr);grid-template-rows:repeat(16,1fr);aspect-ratio:64/16;width:100%;background:linear-gradient(#6fa9d6,#a9d3ef 70%);border:3px solid var(--edge);touch-action:none;user-select:none;cursor:crosshair}
+.bgrid .cell{outline:1px solid rgba(255,255,255,.12);outline-offset:-1px}
+.bgrid .cell.plan{outline:1px dashed rgba(255,255,255,.6)}
+.bgrid .cell .em{font-size:min(1.3vw,15px)}
+.tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}
+.tool{border:2px solid var(--edge);background:#fffaf0;padding:5px 12px;font-weight:800}
+.tool.on{background:var(--ink);color:#fffaf0}
+.palette{display:flex;flex-wrap:wrap;gap:6px}
+.pal{display:flex;align-items:center;gap:6px;border:2px solid var(--edge);background:#fffaf0;padding:4px 8px;font-size:13px;font-weight:700;color:var(--ink)}
+.pal i{width:18px;height:18px;border:2px solid var(--edge);display:inline-block;flex:none}
+.pal .e{font-size:18px;line-height:1}
+.pal small{color:var(--ink-soft);font-weight:500}
+.pal.sel{outline:3px solid var(--miss);outline-offset:1px}
+.pal[disabled]{opacity:.45}
+.secttl{font-weight:800;margin:12px 0 6px;font-size:14px}
+.chestbox{width:120px;height:96px;margin:18px auto 8px;position:relative}
+.chestbox .body{position:absolute;left:0;right:0;bottom:0;height:60px;border:4px solid var(--edge);background:var(--cc)}
+.chestbox .lid{position:absolute;left:-4px;right:-4px;top:4px;height:36px;border:4px solid var(--edge);background:var(--cc);transform-origin:10% 100%;transition:transform .4s}
+.chestbox .lock{position:absolute;left:50%;top:30px;width:18px;height:22px;margin-left:-9px;background:#3b3530;border:3px solid var(--edge);z-index:2}
+.chestbox.shake{animation:cshake .5s infinite}
+.chestbox.open .lid{transform:rotate(-35deg) translateY(-14px)}
+.chestbox.open .lock{display:none}
+@keyframes cshake{25%{transform:rotate(-4deg)}75%{transform:rotate(4deg)}}
+.prize{font-size:56px;line-height:1.1;margin:6px 0;animation:popin .5s}
+.prize i{display:inline-block;width:56px;height:56px;border:4px solid var(--edge)}
+@keyframes popin{0%{transform:scale(0)}70%{transform:scale(1.3)}100%{transform:scale(1)}}
+.rar{display:inline-block;font-family:var(--display);font-size:20px;padding:2px 14px;border:3px solid var(--edge);color:#fff;text-shadow:1px 1px 0 var(--edge)}
+.dexbar{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.dexgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.dcard{border:3px solid #b9ad99;background:#fffaf0;padding:6px 8px;text-align:left;color:var(--ink);min-height:54px}
+.dcard b{display:block;font-size:15px}
+.dcard span{font-size:12px;color:var(--ink-soft)}
+.dcard.l0{border-style:dashed}
+.dcard.l1{border-color:var(--copper)}.dcard.l2{border-color:#9a948a;background:#f4f1ec}.dcard.l3{border-color:var(--gold);background:#fff6d6}.dcard.l4{border-color:var(--ruby);background:#ffe6ea}
+.dcard.unk{background:#e9e1d2;color:#9a8f7f}
+.prog2{height:10px;border:2px solid var(--edge);background:#fffaf0;margin-top:4px}
+.prog2 i{display:block;height:100%;background:var(--gold)}
+.bosspanel{display:flex;align-items:center;gap:16px;width:100%;max-width:560px}
+.bossspr{display:grid;grid-template-columns:repeat(10,8px);grid-template-rows:repeat(10,8px);flex:none;transition:transform .08s}
+.bossspr span{width:8px;height:8px}
+.bossspr.hit{transform:translateX(6px) rotate(4deg)}
+.bossspr.hurt{animation:hurt .4s}
+@keyframes hurt{30%{filter:brightness(3)}}
+.bossinfo{flex:1;text-align:left}
+.bossinfo b{font-family:var(--display);font-size:18px}
+.hpbar{height:16px;border:3px solid var(--edge);background:#3b3530;margin:4px 0}
+.hpbar i{display:block;height:100%;background:var(--miss);transition:width .3s}
+.hearts{font-size:18px;letter-spacing:2px}
+.node.bossnode .blk{background-color:#7a2f3a}
+.toast{position:fixed;left:50%;top:calc(16px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--miss);color:#fff;font-weight:800;padding:8px 16px;border:3px solid var(--edge);display:none;z-index:30}
+.big{font-family:var(--display);font-size:72px;line-height:1}
+.rgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}
+.rgrid div{background:#fffaf0;border:2px solid var(--edge);padding:6px}
+.rgrid b{display:block;font-family:var(--display);font-size:22px;font-weight:400}
+.rgrid span{font-size:12px;color:var(--ink-soft)}
+.loot{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:6px 0 10px}
+.loot .ore{background:#fffaf0;color:var(--ink)}
+.newrec{font-family:var(--display);color:var(--miss);font-size:18px;min-height:24px}
+.misslist{font-size:15px;text-align:left;margin:0 auto;max-width:420px}
+.mobile-note{display:none;margin-top:12px;font-size:14px;background:var(--bg2);border:2px solid var(--edge);padding:8px 12px}
+@media (hover:none) and (pointer:coarse){.mobile-note{display:block}}
+@media (max-width:560px){.choices{grid-template-columns:1fr}.slot{font-size:26px;min-width:22px;height:40px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap" id="home">
+  <div class="top">
+    <h1 class="logo">英単語クラフト<small>単語を打って掘る。集めた鉱石で拠点を建てる。</small></h1>
+    <button class="ghost" id="parentBtn">おうちの人へ</button>
+  </div>
+  <div class="mobile-note">このゲームはパソコンのキーボードで遊ぶ作りです。</div>
+
+  <section class="hero" id="hero"></section>
+  <section class="base">
+    <div class="base-head"><h2>きみの拠点</h2><span class="prog" id="baseProg"></span></div>
+    <div class="grid" id="grid"></div>
+    <div class="empty-base" id="emptyBase">まだ何もない。「拠点をつくる」でブロックを置いてみよう</div>
+  </section>
+  <div class="homebar">
+    <button class="hb build" id="buildBtn">🧱 拠点をつくる</button>
+    <button class="hb chest" id="chestBtn">🎁 宝箱</button>
+    <button class="hb dex" id="dexBtn">📖 単語図鑑</button>
+    <button class="hb help" id="helpBtn">❓ あそびかた</button>
+  </div>
+  <div class="inv" id="inv"></div>
+
+  <div id="layers"></div>
+  <p class="legend">わからないときは「❓ あそびかた」を見てね。★がついた単語は「書けるようにする単語」(教科書の太字)。</p>
+</div>
+
+<div class="wrap" id="game">
+  <div class="hud">
+    <div><span id="hudStage"></span> <span class="where" id="hudLv"></span></div>
+    <div class="vals"><span id="hudCount"></span><span id="hudTime">0:00</span><span id="hudBest"></span><span class="m" id="hudMiss">ミス 0</span></div>
+  </div>
+  <div class="mine" id="card"></div>
+  <div class="track" id="track"></div>
+  <p class="help" id="help"></p>
+  <div class="row-btns"><button class="btn sec" id="quitBtn">やめて地上へ</button></div>
+</div>
+
+<div class="modal" id="stageModal"><div class="sheet" id="stageSheet"></div></div>
+<div class="modal" id="resultModal"><div class="sheet" id="resultSheet" style="text-align:center"></div></div>
+<div class="modal" id="helpModal"><div class="sheet" id="helpSheet"></div></div>
+<div class="modal" id="buildModal"><div class="sheet wide" id="buildSheet"></div></div>
+<div class="modal" id="chestModal"><div class="sheet" id="chestSheet" style="text-align:center"></div></div>
+<div class="modal" id="dexModal"><div class="sheet wide" id="dexSheet"></div></div>
+<div class="modal" id="parentModal"><div class="sheet" id="parentSheet"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ---------- data (Here We Go! 1 / Program 4) ----------
+const W = (en, ja, must=false) => ({en, ja, must});
+const T = (sp, en, ja) => ({sp, en, ja});
+const WORLDS = [
+ { id:4, title:"Let's Enjoy Japanese Food", pages:"p.51-60", stages:[
+   { id:"4-1", name:"Scenes", pages:"p.52-53", items:[
+     W("isn't","～ではない(is notの短縮形)"), W("jelly","ゼリー"), W("butterfly","チョウ"), W("zebra","シマウマ"),
+     W("cookie","クッキー"), W("brand","ブランド・銘柄"), W("woman","女性",true), W("towel","タオル"),
+     W("runner","走る人・ランナー"), W("track and field","陸上競技"), W("man","男性",true), W("street singer","路上で歌う歌手"),
+     W("boy","男の子",true), W("court","(テニスなどの)コート"), W("classmate","クラスメート",true), W("years old","～歳")
+   ]},
+   { id:"4-2", name:"Part 1", pages:"p.55", items:[
+     W("ready","用意ができた",true), W("meat","肉"), W("ha-ha","ハハハ(笑い声)"), W("worry","心配する",true),
+     W("deep-fried","油で揚げた"), W("legend","伝説"), W("favorite","いちばん好きな"), W("lunch","昼食"),
+     W("fox","キツネ"), W("eat","食べる"), W("food","食べ物"), W("Japanese","日本の")
+   ]},
+   { id:"4-3", name:"Part 2", pages:"p.56", items:[
+     W("who's","だれは～ですか(who isの短縮形)"), W("lady","女の人"), W("she's","彼女は～です(she isの短縮形)"), W("Texas","テキサス(アメリカの州)"),
+     W("traditional","伝統的な"), W("custard pudding","カスタードプリン"), W("would","(Would you like ～?で)～はいかが"), W("sister","姉・妹"),
+     W("chef","シェフ・料理人"), W("cool","かっこいい"), W("cooking","料理(すること)"), W("dish","料理・皿"),
+     W("excellent","すばらしい"), W("sweet","甘い"), W("delicious","とてもおいしい")
+   ]},
+   { id:"4-4", name:"Action・文法", pages:"p.58-59", items:[
+     W("got","わかった(I got it!のgot)"), W("answer","答え",true), W("round","丸い"), W("fruit","果物"),
+     W("yellow","黄色(の)"), W("long","長い"), W("sour","すっぱい"), W("vegetable","野菜"),
+     W("hint","ヒント"), W("right","正しい"), W("drone","ドローン"), W("programmer","プログラマー"),
+     W("he's","彼は～です(he isの短縮形)"), W("high school","高校"),
+     W("I got it!","わかった!"), W("That's right.","その通り。")
+   ]},
+   { id:"4-5", name:"小学校の単語", pages:"p.53-58", items:[
+     W("elephant","ゾウ"), W("horse","ウマ"), W("ant","アリ"), W("buy","買う"), W("who","だれ"),
+     W("she","彼女は"), W("he","彼は"), W("famous","有名な"), W("year","年"), W("old","年をとった・古い"),
+     W("banana","バナナ"), W("cherry","さくらんぼ"), W("tomato","トマト"), W("corn","トウモロコシ")
+   ]},
+   { id:"4-T1", name:"本文 Part 1", short:"本文1", pages:"p.55", text:true, items:[
+     T("Mao","Lunch is ready.","昼ごはんの用意ができたよ。"),
+     T("Daniel","Thank you. Is this udon?","ありがとう。これはうどん?"),
+     T("Mao","Yes, it's kitsune udon.","うん、きつねうどんだよ。"),
+     T("Daniel","Kitsune? I don't eat fox meat.","キツネ? ぼくはキツネの肉は食べないよ。"),
+     T("Mao","Ha-ha. Don't worry.","ハハハ。心配しないで。"),
+     T("Mao","This is deep-fried tofu.","これは油揚げだよ。"),
+     T("Mao","In Japanese legend, it's the favorite food of foxes.","日本の伝説では、それはキツネの大好物なんだ。"),
+     T("Daniel","Oh, I see. So this is kitsune udon.","ああ、なるほど。だからこれはきつねうどんなんだね。"),
+     T("Mao","Yes. Let's eat.","うん。食べよう。")
+   ]},
+   { id:"4-T2", name:"本文 Part 2", short:"本文2", pages:"p.56", text:true, items:[
+     T("Ms. Furuse","Would you like some tea?","お茶はいかが?"),
+     T("Daniel","Thank you. Who's this lady?","ありがとうございます。この女の人はだれですか。"),
+     T("Ms. Furuse","She's my sister Aki.","彼女は私の姉[妹]のアキよ。"),
+     T("Ms. Furuse","She's a chef in Texas.","彼女はテキサスでシェフをしているの。"),
+     T("Daniel","Wow, cool!","わあ、かっこいい!"),
+     T("Ms. Furuse","She's good at cooking Japanese dishes.","彼女は日本料理を作るのが得意なの。"),
+     T("Ms. Furuse","Her chawan-mushi is excellent.","彼女の茶わんむしはすばらしいのよ。"),
+     T("Daniel","Chawan-mushi? What is it?","茶わんむし? それは何ですか。"),
+     T("Ms. Furuse","It's a Japanese traditional dish.","日本の伝統的な料理よ。"),
+     T("Ms. Furuse","You make it just like custard pudding.","カスタードプリンとちょうど同じように作るの。"),
+     T("Daniel","Is chawan-mushi sweet?","茶わんむしは甘いですか。"),
+     T("Ms. Furuse","No, but it's delicious.","いいえ、でもとてもおいしいわよ。")
+   ]}
+ ]},
+ { id:5, title:"Pajama Day", pages:"p.61-70", stages:[
+   { id:"5-S", name:"Scenes", pages:"p.62-63", items:[
+     W("design","デザイン"),
+     W("home economics","家庭科"),
+     W("sew","ぬう"),
+     W("doesn't","～しない(does notの短縮形)"),
+     W("does","する(三単現の疑問文・答えで使う)",true),
+     W("drawing","絵をかくこと"),
+     W("his","彼の",true),
+     W("curry and rice","カレーライス"),
+     W("clothes","服",true),
+     W("Korean","韓国語・韓国の"),
+     W("ice hockey","アイスホッケー"),
+     W("player","選手")
+   ]},
+   { id:"5-1", name:"Part 1", pages:"p.65", items:[
+     W("cousin","いとこ"),
+     W("live","住む"),
+     W("pajamas","パジャマ"),
+     W("school uniform","制服"),
+     W("Just kidding.","冗談だよ。"),
+     W("common","ふつうの・よくある"),
+     W("spend","過ごす",true),
+     W("photo","写真"),
+     W("students","生徒(複数)"),
+     W("teachers","先生(複数)"),
+     W("really","本当に"),
+     W("funny","おもしろい")
+   ]},
+   { id:"5-2", name:"Part 2", pages:"p.66", items:[
+     W("only","～だけ",true),
+     W("company","会社"),
+     W("companies","会社(複数)"),
+     W("work","働く",true),
+     W("all day","一日中",true),
+     W("proud","誇りに思って"),
+     W("be proud of","～を誇りに思う"),
+     W("mean","意味する",true),
+     W("charity","チャリティー・慈善"),
+     W("support","支える・支援する"),
+     W("uncle","おじ"),
+     W("often","よく・しばしば"),
+     W("talk","話す"),
+     W("join","参加する"),
+     W("sick","病気の"),
+     W("hospital","病院"),
+     W("wonderful","すばらしい")
+   ]},
+   { id:"5-G", name:"Action・文法", pages:"p.68-70", items:[
+     W("I'd","I would の短縮形"),
+     W("elementary school","小学校"),
+     W("event","行事"),
+     W("likes","好き(likeの三単現)"),
+     W("goes","行く(goの三単現)"),
+     W("washes","洗う(washの三単現)"),
+     W("studies","勉強する(studyの三単現)"),
+     W("which","どちらの",true),
+     W("whose","だれの",true),
+     W("yours","あなたのもの",true),
+     W("mine","私のもの",true),
+     W("hers","彼女のもの",true),
+     W("ours","私たちのもの",true),
+     W("bike","自転車",true)
+   ]},
+   { id:"5-T1", name:"本文 Part 1", short:"本文1", pages:"p.65", text:true, items:[
+     T("Daniel","This is my cousin Jenny.","これはぼくのいとこのジェニーだよ。"),
+     T("Daniel","She lives in New York.","彼女はニューヨークに住んでいるんだ。"),
+     T("Miki","Oh! She's in pajamas at school, right?","あら! 彼女、学校でパジャマを着ているよね?"),
+     T("Daniel","Yes. She doesn't like her school uniform.","うん。彼女は制服が好きじゃないんだ。"),
+     T("Miki","Really?","本当?"),
+     T("Daniel","Ha-ha. Just kidding.","ハハハ。冗談だよ。"),
+     T("Daniel","This is a photo of Pajama Day.","これはパジャマデーの写真だよ。"),
+     T("Miki","Pajama Day? Is that common in the U.S.?","パジャマデー? それはアメリカではふつうなの?"),
+     T("Daniel","Yes. Students and teachers spend the day in pajamas.","うん。生徒と先生がその日をパジャマで過ごすんだ。"),
+     T("Miki","That's funny!","おもしろいね!")
+   ]},
+   { id:"5-T2", name:"本文 Part 2", short:"本文2", pages:"p.66", text:true, items:[
+     T("Miki","Is Pajama Day only for schools?","パジャマデーは学校だけのものなの?"),
+     T("Daniel","No. Some companies have Pajama Day too.","ううん。パジャマデーがある会社もあるよ。"),
+     T("Daniel","My uncle often talks about it.","ぼくのおじさんがよくその話をするんだ。"),
+     T("Miki","Does he work in pajamas all day?","おじさんは一日中パジャマで働くの?"),
+     T("Daniel","Yes, he does. He's proud of that.","うん、そうだよ。おじさんはそれを誇りに思っているんだ。"),
+     T("Miki","What do you mean?","どういう意味?"),
+     T("Daniel","Some people join Pajama Day for charity.","チャリティーのためにパジャマデーに参加する人もいるんだ。"),
+     T("Daniel","They support sick children in hospitals.","入院している病気の子どもたちを支援しているんだよ。"),
+     T("Miki","That's wonderful!","すばらしいね!")
+   ]}
+ ]},
+ { id:6, title:"The Way to School", pages:"p.71-80", stages:[
+   { id:"6-S", name:"Scenes", pages:"p.72-73", items:[
+     W("him","彼を・彼に",true),
+     W("yeah","うん"),
+     W("detective","探偵"),
+     W("monster","怪物"),
+     W("pirate","海賊"),
+     W("How about","～はどう?"),
+     W("because","なぜなら",true),
+     W("early","早く",true),
+     W("there","そこに",true),
+     W("romantic","ロマンチックな"),
+     W("cute","かわいい"),
+     W("exciting","わくわくする")
+   ]},
+   { id:"6-1", name:"Part 1", pages:"p.75", items:[
+     W("respect","尊敬する"),
+     W("tell","話す・伝える",true),
+     W("hour","時間(60分)",true),
+     W("across","～を横切って"),
+     W("savanna","サバンナ"),
+     W("tough","たいへんな"),
+     W("Kenya","ケニア"),
+     W("every morning","毎朝"),
+     W("kilometer","キロメートル"),
+     W("run","走る"),
+     W("walk","歩く"),
+     W("take","(時間が)かかる")
+   ]},
+   { id:"6-2", name:"Part 2", pages:"p.76", items:[
+     W("amazing","すごい",true),
+     W("dangerous","危険な"),
+     W("attack","おそう"),
+     W("schoolchildren","通学中の子どもたち"),
+     W("safe","安全な"),
+     W("parent","親",true),
+     W("pray","祈る"),
+     W("safety","安全"),
+     W("has","持っている(haveの三単現)",true),
+     W("what's","what is の短縮形"),
+     W("airplane","飛行機"),
+     W("you know","～だよね"),
+     W("No way!","まさか!"),
+     W("dream","夢"),
+     W("sometimes","ときどき")
+   ]},
+   { id:"6-G", name:"Action・文法", pages:"p.78-79", items:[
+     W("anything","何か",true),
+     W("else","ほかに"),
+     W("them","彼らを・それらを",true),
+     W("us","私たちを",true),
+     W("theirs","彼らのもの",true),
+     W("its","それの",true),
+     W("these","これら(の)",true),
+     W("character","登場人物"),
+     W("strong","強い"),
+     W("brave","勇敢な")
+   ]},
+   { id:"6-T1", name:"本文 Part 1", short:"本文1", pages:"p.75", text:true, items:[
+     T("Anya","Look at this boy.","この男の子を見て。"),
+     T("Ken","Who is he?","彼はだれ?"),
+     T("Anya","He's Jackson. He lives in Kenya.","彼はジャクソン。ケニアに住んでいるの。"),
+     T("Anya","I respect him.","私は彼を尊敬しているの。"),
+     T("Ken","Tell me about him.","彼のことを教えて。"),
+     T("Anya","Every morning he runs and walks 15 kilometers to school.","毎朝、彼は学校まで15キロを走ったり歩いたりするの。"),
+     T("Anya","It takes two hours.","2時間かかるのよ。"),
+     T("Ken","Wow!","わあ!"),
+     T("Anya","He goes to school with his sister.","彼はお姉さん[妹]といっしょに学校に行くの。"),
+     T("Anya","He walks across the savanna with her.","彼は彼女といっしょにサバンナを歩いて横切るの。"),
+     T("Ken","That's tough.","それはたいへんだね。")
+   ]},
+   { id:"6-T2", name:"本文 Part 2", short:"本文2", pages:"p.76", text:true, items:[
+     T("Ken","The savanna is amazing.","サバンナはすごいね。"),
+     T("Anya","It's a dangerous place too, you know.","危険な場所でもあるのよ。"),
+     T("Ken","Why is it dangerous?","どうして危険なの?"),
+     T("Anya","Because elephants sometimes attack schoolchildren.","ゾウがときどき通学中の子どもたちをおそうからよ。"),
+     T("Ken","No way! Are Jackson and his sister safe?","まさか! ジャクソンとお姉さん[妹]は無事なの?"),
+     T("Anya","No. Their parents pray for their safety.","ううん。両親は2人の無事を祈っているの。"),
+     T("Ken","Well then, why does Jackson go to school?","それじゃあ、どうしてジャクソンは学校に行くの?"),
+     T("Anya","Because he has a dream.","夢があるからよ。"),
+     T("Ken","What's his dream?","彼の夢は何?"),
+     T("Anya","The hint is \"airplane.\" Think about it.","ヒントは「飛行機」。考えてみて。")
+   ]}
+ ]},
+ { id:7, title:"Research on Australia", pages:"p.81-91", stages:[
+   { id:"7-S", name:"Scenes", pages:"p.82-83", items:[
+     W("dad","お父さん"),
+     W("over","向こうに",true),
+     W("over there","向こうに"),
+     W("near","～の近くに",true),
+     W("those","あれら(の)",true),
+     W("college","大学"),
+     W("full","おなかがいっぱいの"),
+     W("something","何か",true),
+     W("little","少し(a little)",true),
+     W("far","遠い",true),
+     W("plane","飛行機",true),
+     W("hungry","おなかがすいた"),
+     W("steak","ステーキ"),
+     W("restaurant","レストラン"),
+     W("usually","ふだんは"),
+     W("library","図書館")
+   ]},
+   { id:"7-1", name:"Part 1", pages:"p.85", items:[
+     W("Sydney","シドニー"),
+     W("exactly","その通り"),
+     W("lot","たくさん(a lot of)",true),
+     W("a lot of","たくさんの"),
+     W("unique","めずらしい・独特の"),
+     W("quokka","クオッカ"),
+     W("famous","有名な"),
+     W("place","場所"),
+     W("koala","コアラ"),
+     W("kangaroo","カンガルー"),
+     W("picture","写真・絵"),
+     W("small","小さい")
+   ]},
+   { id:"7-2", name:"Part 2", pages:"p.86", items:[
+     W("rich","豊かな",true),
+     W("helicopter","ヘリコプター"),
+     W("seaplane","水上飛行機"),
+     W("scenery","景色"),
+     W("gorgeous","とても美しい"),
+     W("land","着陸する・降りる",true),
+     W("coral reef","サンゴ礁"),
+     W("someday","いつか"),
+     W("around","あちこち(show ～ aroundで案内する)",true),
+     W("be famous for","～で有名だ"),
+     W("look like","～のように見える"),
+     W("heart","ハート"),
+     W("island","島"),
+     W("nature","自然")
+   ]},
+   { id:"7-G", name:"Action・文法", pages:"p.88-91", items:[
+     W("next to","～のとなりに",true),
+     W("gate","門"),
+     W("popular","人気のある",true),
+     W("turtle","カメ"),
+     W("cost","費用"),
+     W("feed","えさ"),
+     W("bamboo","竹"),
+     W("convenience store","コンビニ"),
+     W("now","今",true),
+     W("floor","階",true),
+     W("stairs","階段"),
+     W("guest","客"),
+     W("third","3番目の"),
+     W("turn","曲がる"),
+     W("left","左"),
+     W("You're welcome.","どういたしまして。"),
+     W("entrance","入口")
+   ]},
+   { id:"7-T1", name:"本文 Part 1", short:"本文1", pages:"p.85", text:true, items:[
+     T("Ken","Can you tell me about Australia?","オーストラリアについて教えてくれる?"),
+     T("Emily","Sure. There is a famous place in Sydney.","もちろん。シドニーに有名な場所があるよ。"),
+     T("Ken","It's the Opera House, right?","オペラハウスだよね?"),
+     T("Emily","Exactly. There are a lot of unique animals in Australia too.","その通り。オーストラリアにはめずらしい動物もたくさんいるよ。"),
+     T("Ken","I know koalas and kangaroos.","コアラとカンガルーは知ってるよ。"),
+     T("Emily","Then do you know quokkas?","じゃあ、クオッカは知ってる?"),
+     T("Ken","Quokkas? No, I don't.","クオッカ? ううん、知らない。"),
+     T("Emily","They are like small kangaroos.","小さなカンガルーみたいなの。"),
+     T("Emily","I have some pictures of quokkas.","クオッカの写真を何枚か持ってるよ。"),
+     T("Ken","Wow, they are so cute!","わあ、とてもかわいいね!")
+   ]},
+   { id:"7-T2", name:"本文 Part 2", short:"本文2", pages:"p.86", text:true, items:[
+     T("Emily","Australia is famous for its rich nature too.","オーストラリアは豊かな自然でも有名なの。"),
+     T("Ken","What is your favorite place?","きみのいちばん好きな場所はどこ?"),
+     T("Emily","I love the Great Barrier Reef. Look!","グレートバリアリーフが大好き。見て!"),
+     T("Mao","Wow, that looks like a heart.","わあ、ハートみたいに見えるね。"),
+     T("Mao","How can I go there?","どうやってそこに行けるの?"),
+     T("Emily","By helicopter or seaplane.","ヘリコプターか水上飛行機でだよ。"),
+     T("Emily","The scenery from the sky is gorgeous.","空からの景色はとてもすばらしいの。"),
+     T("Mao","Can I land on the island?","その島に降りられるの?"),
+     T("Emily","No, you can't. It's a coral reef.","ううん、できないよ。サンゴ礁なの。"),
+     T("Ken","It's really beautiful.","本当にきれいだね。"),
+     T("Ken","Mao, let's go to Australia someday.","真央、いつかオーストラリアに行こうよ。"),
+     T("Emily","I can show you around.","私が案内してあげるよ。")
+   ]}
+ ]}
+];
+
+const ORES={stone:{n:"石",c:"var(--stone)"},copper:{n:"銅",c:"var(--copper)"},iron:{n:"鉄",c:"var(--iron)"},gold:{n:"金",c:"var(--gold)"},ruby:{n:"ルビー",c:"var(--ruby)"}};
+const TLV={
+ 1:{name:"えらぶ",desc:"英文を聞いて、日本語の意味をえらぶ",type:"choice",ore:"copper"},
+ 2:{name:"パズル",desc:"日本語を見て、英語のブロックを正しい順にならべる",type:"puzzle",ore:"iron"},
+ 3:{name:"うつ",desc:"日本語を見て英文を打つ(最初の文字ヒントあり)",type:"type",hint:"first",ore:"gold"},
+ 4:{name:"うつ+",desc:"ヒントなしで英文を打つ",type:"type",hint:"none",ore:"ruby"}
+};
+const lvOf=(st,l)=>(st&&st.text?TLV:LV)[l];
+const LV={
+ 1:{name:"えらぶ",desc:"英語を聞いて、意味をえらぶ",type:"choice",ore:"copper"},
+ 2:{name:"うつ",desc:"日本語を見て英語を打つ(最初の文字ヒントあり)",type:"type",hint:"first",ore:"iron"},
+ 3:{name:"うつ+",desc:"ヒントなしで打つ",type:"type",hint:"none",ore:"gold"},
+ 4:{name:"聞きとり",desc:"音だけを聞いて打つ(日本語はあとで出る)",type:"type",hint:"none",listen:true,ore:"ruby"}
+};
+
+// ---------- blueprint ----------
+const PAL={dirt:"#8a5f3d",grass:"#5fa045",plank:"#b8875a",log:"#6e4b2e",brick:"#a9504a",roof:"#4f6d8f",glass:"#bfe3f2",cobble:"#8d8f94",leaf:"#3f8a3a",crop:"#d8c04a",path:"#c9b48a",flag:"#e0405a"};
+const BP=(()=>{const c=[];let bi=0;const add=(x,y,m)=>c.push({x,y,m,b:bi});
+  const ground=(a,b)=>{for(let x=a;x<=b;x++)add(x,15,"dirt");for(let x=a;x<=b;x++)add(x,14,"grass")};
+  // 1: house
+  ground(0,13);
+  for(let y=13;y>=9;y--)for(let x=2;x<=11;x++){
+    if((x===6||x===7)&&y>=11)continue;
+    const win=(y===10||y===11)&&(x===3||x===4||x===9||x===10);
+    add(x,y,win?"glass":(x===2||x===11?"log":"plank"))}
+  for(let r=0;r<5;r++){const y=8-r;for(let x=1+r;x<=12-r;x++)add(x,y,"roof")}
+  add(8,3,"brick");add(8,2,"brick");
+  bi=1;// 2: tower
+  ground(14,25);
+  for(let y=13;y>=4;y--)for(let x=17;x<=22;x++){
+    if((x===19||x===20)&&y>=12)continue;
+    if((x===19||x===20)&&(y===8||y===7))continue;
+    add(x,y,"cobble")}
+  for(const x of [17,19,20,22])add(x,3,"cobble");
+  add(20,2,"log");add(20,1,"log");add(21,1,"flag");
+  bi=2;// 3: tree & farm
+  ground(26,39);
+  for(let y=13;y>=9;y--){add(29,y,"log")}
+  for(let y=8;y>=4;y--)for(let x=26;x<=32;x++){const dx=Math.abs(x-29),dy=Math.abs(y-6);if(dx+dy<=4)add(x,y,"leaf")}
+  for(let x=34;x<=39;x++)add(x,14,"path");
+  for(let x=34;x<=39;x+=1)if(x%2===0)add(x,13,"crop");
+  for(let x=35;x<=39;x+=2)add(x,12,"crop");
+  bi=3;// 4: windmill
+  ground(40,49);
+  for(let y=13;y>=6;y--)for(let x=43;x<=46;x++){ if((x===44||x===45)&&y>=12)continue; add(x,y,(y===9&&(x===44||x===45))?"glass":"brick"); }
+  for(let x=42;x<=47;x++)add(x,5,"roof"); for(let x=43;x<=46;x++)add(x,4,"roof"); add(44,3,"roof");add(45,3,"roof");
+  for(let i=1;i<=4;i++){ add(44-i,6-i,"plank"); add(45+i,6-i,"plank"); add(44-i,6+i,"plank"); add(45+i,6+i,"plank"); }
+  bi=4;// 5: castle
+  ground(50,63);
+  for(let y=13;y>=8;y--)for(let x=53;x<=60;x++){ if(x>=56&&x<=57&&y>=11)continue; if(y===9&&(x===54||x===59))add(x,y,"glass"); else add(x,y,"cobble"); }
+  for(const x of [53,55,58,60])add(x,7,"cobble");
+  for(const [a,b] of [[50,52],[61,63]]){ for(let y=13;y>=4;y--)for(let x=a;x<=b;x++)add(x,y,"cobble"); add(a,3,"cobble");add(b,3,"cobble"); add(a+1,6,"glass"); }
+  add(51,3,"log");add(51,2,"log");add(51,1,"flag");add(62,3,"log");add(62,2,"log");add(62,1,"flag");
+  for(let x=55;x<=58;x++)add(x,10,"log");
+  // dedupe: later entries replace material at same cell
+  const map=new Map();c.forEach((p,i)=>{const k=p.x+","+p.y;if(map.has(k)){c[map.get(k)].m=p.m;c[i]=null}else map.set(k,i)});
+  return c.filter(Boolean)})();
+const BUILD_NAMES=[[0,"家"],[0,"見張り塔"],[0,"木と畑"]];
+
+// ---------- storage ----------
+const KEY="eitangoCraft:v1";
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&typeof s==="object")return s}catch(e){}return{}}
+let S=load();S.stages=S.stages||{};S.misses=S.misses||{};S.log=S.log||[];S.inv=S.inv||{stone:0,copper:0,iron:0,gold:0,ruby:0};S.placed=S.placed||0;
+S.build=S.build||{};S.items=S.items||{};S.dex=S.dex||{};S.chests=S.chests||[];S.chestDay=S.chestDay||{};S.bossWin=S.bossWin||{};S.dexDone=S.dexDone||{};
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+const rec=sid=>S.stages[sid]||(S.stages[sid]={});
+const oreTotal=()=>Object.values(S.inv).reduce((a,b)=>a+b,0);
+
+// ---------- sound & speech ----------
+let AC=null;function tone(f,d,type="square",v=.05){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;g.gain.value=v;g.gain.exponentialRampToValueAtTime(.0001,AC.currentTime+d);o.connect(g).connect(AC.destination);o.start();o.stop(AC.currentTime+d)}catch(e){}}
+const sfx={hit:()=>tone(520+Math.random()*80,.05,"square",.03),miss:()=>tone(110,.15,"sawtooth",.05),brk:()=>{tone(260,.08,"square",.05);setTimeout(()=>tone(390,.08,"square",.05),70);setTimeout(()=>tone(780,.14,"square",.04),140)}};
+let voice=null;
+function pickVoice(){const vs=speechSynthesis.getVoices().filter(v=>/^en(-|_)US/i.test(v.lang));voice=vs.find(v=>/Samantha|Google US English|Aria|Jenny|Ava/i.test(v.name))||vs[0]||null}
+if("speechSynthesis" in window){pickVoice();speechSynthesis.onvoiceschanged=pickVoice}
+function say(t){if(!("speechSynthesis" in window))return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t.replace(/-/g," "));u.lang="en-US";if(voice)u.voice=voice;u.rate=.85;speechSynthesis.speak(u)}
+
+// ---------- helpers ----------
+const $=id=>document.getElementById(id);
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const fmt=s=>`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,"0")}`;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function toast(m){const t=$("toast");t.textContent=m;t.style.display="block";clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display="none",1800)}
+const starsOf=sid=>{const r=rec(sid);let n=0;for(let l=1;l<=4;l++)if(r[l])n++;return n};
+const unlockedLv=(sid,l)=>l===1||!!rec(sid)[l-1];
+const reviewItems=()=>Object.entries(S.misses).sort((a,b)=>b[1].count-a[1].count).slice(0,15).map(([en,v])=>W(en,v.ja,v.must));
+const stageOre=(s,i)=>s.text?"var(--ruby)":["var(--copper)","var(--iron)","var(--gold)","var(--copper)","var(--iron)"][i%5];
+
+// ---------- home ----------
+let lastPlaced=null;
+function cellHTML(v,extra){
+  if(!v)return `<div class="cell emp${extra||""}"></div>`;
+  const [t,id]=v.split(":");
+  if(t==="b"){const B=BLOCKS[id];return `<div class="cell on${extra||""}" style="background:${B?B.c:"#999"}"></div>`}
+  const D=DECOS[id];return `<div class="cell${extra||""}"><span class="em">${D?D.e:"?"}</span></div>`;
+}
+function renderBase(){
+  const cb0=curBuilding();
+  let h="";for(let y=0;y<16;y++)for(let x=0;x<64;x++){const k=x+","+y,v=PLAN.get(k);
+    h+=(!S.build[k]&&v&&v.b===cb0)?planCell(k,v,cb0,false):cellHTML(S.build[k])}
+  $("grid").innerHTML=h;
+  const n=Object.keys(S.build).length;
+  $("emptyBase").style.display="none";
+  const{tot,ok}=bpProgress();
+  $("baseProg").textContent=cb0<0?"ぜんぶ完成! 自由に作ろう":`いまの目標:点線の「${BUILDINGS[cb0]}」を完成させよう ${ok[cb0]}/${tot[cb0]}`;
+  const items=Object.entries(S.items).filter(([k,v])=>v>0);
+  $("inv").innerHTML=Object.entries(ORES).map(([k,o])=>`<span class="ore"><i style="background:${o.c}"></i>${o.n} ${S.inv[k]||0}</span>`).join("")
+    +items.map(([k,v])=>`<span class="ore">${DECOS[k].e} ${DECOS[k].n} ${v}</span>`).join("");
+  const cb=$("chestBtn");cb.innerHTML="🎁 宝箱"+(S.chests.length?`<span class="badge">${S.chests.length}</span>`:"");
+  const dx=dexStats();$("dexBtn").textContent=`📖 単語図鑑 ${dx.seen}/${dx.total}`;
+}
+function wordStages(w){return w.stages.filter(s=>!s.text)}
+function nextTask(){
+  for(const w of WORLDS.filter(x=>x.stages)){
+    for(const L of [1,2])for(const st of wordStages(w))if(!rec(st.id)[L])return{kind:"stage",w,st,L};
+    if(!S.bossWin[w.id])return{kind:"boss",w};
+  }
+  for(const w of WORLDS.filter(x=>x.stages))for(const L of [3,4])for(const st of wordStages(w))if(!rec(st.id)[L])return{kind:"stage",w,st,L};
+  if(reviewItems().length)return{kind:"review"};
+  return{kind:"done"};
+}
+let openLayers=null;
+function renderHero(){
+  const t=nextTask(),h=$("hero");let what="",act=null;
+  if(t.kind==="stage"){const m=LV[t.L];what=`<small>つぎはここ!</small><b>地下${t.w.id}層 ${t.st.id} ${esc(t.st.name)} の Lv${t.L}「${m.name}」</b><span>ノーミスで ${ORES[m.ore].n} が出る。クリアで宝箱!</span>`;act=()=>startGame(t.st,t.L)}
+  else if(t.kind==="boss"){what=`<small>つぎはここ!</small><b>地下${t.w.id}層のボス「${esc(BOSS[t.w.id].name)}」に挑戦!</b><span>倒すとルビーの宝箱</span>`;act=()=>openBoss(t.w.id)}
+  else if(t.kind==="review"){what=`<small>つぎはここ!</small><b>ミス復習</b><span>まちがえた単語をやっつけよう</span>`;act=()=>startGame(findStage("review"),2)}
+  else what=`<small>すごい!</small><b>ぜんぶクリア! 拠点を好きなだけ作ろう</b>`;
+  h.innerHTML=`<div class="what">${what}</div>${act?`<button class="gobtn" id="goBtn">▶ 掘りに行く</button>`:""}`;
+  if(act)$("goBtn").onclick=act;
+  if(openLayers==null)openLayers=new Set([t.w?t.w.id:4]);
+}
+function renderHome(){
+  renderBase();renderHero();
+  const box=$("layers");box.innerHTML="";
+  WORLDS.forEach(w=>{
+    const el=document.createElement("section");el.className="layer"+(w.locked?" locked":"")+(openLayers.has(w.id)?"":" closed");
+    if(w.locked){el.innerHTML=`<div class="layer-head"><h2>地下${w.id}層  ${esc(w.title)}</h2><span class="note">${w.pages}</span></div><div class="lock">授業が進んだら掘れるようになります。</div>`;box.appendChild(el);return}
+    const total=w.stages.length*4,got=w.stages.reduce((a,s)=>a+starsOf(s.id),0),rv=reviewItems().length;
+    el.innerHTML=`<div class="layer-head" data-tog="${w.id}"><h2>地下${w.id}層  ${esc(w.title)}<span class="tog">${openLayers.has(w.id)?"▼ とじる":"▶ ひらく"}</span></h2><span class="stars">★ ${got}/${total}${S.bossWin[w.id]?" 🏆":""}</span></div>
+    <div class="shafts">${w.stages.map((s,i)=>{const n=starsOf(s.id);
+      return `<button class="node" data-sid="${s.id}"><span class="blk" style="--ore:${stageOre(s,i)}"><b>${s.text?s.short:s.id}</b></span>
+      <span class="lbl">${esc(s.name)}<br><span style="font-weight:500;color:var(--on-dark-soft)">${s.pages}</span></span>
+      <span class="st">${"★".repeat(n)}${"☆".repeat(4-n)}</span></button>`}).join("")}
+      ${(()=>{const ok=bossUnlocked(w),win=S.bossWin[w.id];
+        return `<button class="node bossnode" data-boss="${w.id}"><span class="blk" style="--ore:${win?"var(--gold)":"var(--miss)"}"><b>${ok?"BOSS":"🔒"}</b></span><span class="lbl">${esc(BOSS[w.id].name)}<br><span style="font-weight:500;color:var(--on-dark-soft)">${win?"🏆 撃破!":ok?"挑戦できる!":"Lv2を全部クリアで出現"}</span></span><span class="st">${win?"🏆":""}</span></button>`})()}
+      <button class="node" data-sid="review"><span class="blk" style="--ore:var(--ok)"><b>${rv}</b></span><span class="lbl">ミス復習<br><span style="font-weight:500;color:var(--on-dark-soft)">まちがえた単語</span></span><span class="st"></span></button>
+    </div>`;
+    box.appendChild(el)});
+  box.querySelectorAll("[data-tog]").forEach(b=>b.onclick=()=>{const id=+b.dataset.tog;openLayers.has(id)?openLayers.delete(id):openLayers.add(id);renderHome()});
+  box.querySelectorAll(".node[data-sid]").forEach(b=>b.onclick=()=>openStage(b.dataset.sid));
+  box.querySelectorAll(".node[data-boss]").forEach(b=>b.onclick=()=>openBoss(+b.dataset.boss));
+}
+function findStage(sid){if(sid==="review")return{id:"review",name:"ミス復習",pages:"まちがえた単語",items:reviewItems(),review:true};
+  for(const w of WORLDS)if(w.stages)for(const s of w.stages)if(s.id===sid)return s}
+function closeModal(id){$(id).classList.remove("on")}
+function openStage(sid){
+  const st=findStage(sid);const sh=$("stageSheet");
+  if(st.review){
+    sh.innerHTML=st.items.length?`<h3>ミス復習</h3><p class="sub">まちがえた回数が多い単語から最大15語。ミスなしで打てると減っていきます。</p>
+      <div class="levels"><button class="lv" data-lv="2"><span class="n">GO</span><span><span class="t">うつ</span><span class="d">日本語を見て英語を打つ(ヒントあり)</span></span><span class="rec">${st.items.length}語</span></button></div>
+      <div class="row-btns"><button class="btn sec" data-close>とじる</button></div>`
+      :`<h3>ミス復習</h3><p class="sub">まだまちがえた単語はありません。ステージで掘ると、ここにたまっていきます。</p><div class="row-btns"><button class="btn sec" data-close>とじる</button></div>`;
+  }else{
+    const r=rec(sid);
+    sh.innerHTML=`<h3>${st.text?"":st.id+"  "}${esc(st.name)}</h3><p class="sub">${st.pages}・${st.items.length}${st.text?"文":"語"}</p>${st.text?`<div class="row-btns" style="justify-content:flex-start;margin:0 0 12px"><button class="btn sec" id="readBtn">📖 本文を読む・聞く</button></div>`:""}
+    <div class="levels">${[1,2,3,4].map(l=>{const ok=unlockedLv(sid,l),R=r[l];
+      return `<button class="lv" data-lv="${l}" ${ok?"":"disabled"}><span class="n">${ok?"Lv"+l:"🔒"}</span>
+      <span><span class="t">${lvOf(st,l).name}</span><span class="d">${ok?lvOf(st,l).desc:"Lv"+(l-1)+"をクリアすると開く"}</span><span class="drop">ミスなしで ${ORES[lvOf(st,l).ore].n} が出る</span></span>
+      <span class="rec">${R?"★ "+R.rank+" "+fmt(R.best):""}</span></button>`}).join("")}</div>
+    ${st.text?"":`<div class="peek">${st.items.map(i=>i.must?`<span class="must">★${esc(i.en)}</span>`:esc(i.en)).join(" / ")}</div>`}
+    <div class="row-btns"><button class="btn sec" data-close>とじる</button></div>`;
+    if(st.text)setTimeout(()=>{const b=$("readBtn");if(b)b.onclick=()=>{closeModal("stageModal");openReader(st)}},0);
+  }
+  sh.querySelectorAll(".lv:not([disabled])").forEach(b=>b.onclick=()=>{closeModal("stageModal");startGame(st,+b.dataset.lv)});
+  sh.querySelector("[data-close]").onclick=()=>closeModal("stageModal");
+  $("stageModal").classList.add("on");
+}
+
+// ---------- game ----------
+let G=null;
+const CRACKS=["M30 20 L45 42 L38 58","M45 42 L66 50 L80 38","M38 58 L52 76 L48 96","M66 50 L74 74 L92 82","M52 76 L28 84 L18 100","M74 74 L64 98"];
+function startGame(st,lv){
+  G={st,lv,mode:lvOf(st,lv),boss:st.boss?{hp:BOSS_HP,max:BOSS_HP,hearts:3,limit:BOSS_TIME}:null,queue:shuffle(st.items).map(i=>({...i,re:0})),pos:0,uniq:st.items.length,cleared:new Set(),
+     miss:0,keys:0,firstTry:0,t0:null,timer:null,wordMiss:0,charMiss:0,idx:0,busy:false,missed:new Map(),loot:{}};
+  $("home").style.display="none";$("game").style.display="block";
+  $("hudStage").textContent=st.boss?"層ボス "+st.name:st.review?"ミス復習":(st.text?"":st.id+" ")+st.name;
+  $("hudLv").textContent=`Lv${lv} ${G.mode.name}`;
+  $("help").textContent=G.mode.type==="choice"?"数字キー 1〜4 でもえらべます。Enter でもう一度聞く。":G.mode.type==="puzzle"?"ブロックをクリック、または数字キーでえらぶ。正しい順にならべよう。Enter でもう一度聞く。":"半角英数で入力。1文字ごとにツルハシで1回叩く。大文字・小文字は気にしなくてOK。Enter でもう一度聞く。";
+  renderTrack();showItem();
+  const R=(st.review||st.boss)?null:rec(st.id)[lv];G.best=R?R.best:null;
+  $("hudBest").className="";$("hudBest").textContent=st.boss?"制限時間 "+fmt(BOSS_TIME):st.review?"":G.best?`ベスト ${fmt(G.best)}`:"初挑戦";
+  G.timer=setInterval(()=>{if(!G||!G.t0)return;const el=(Date.now()-G.t0)/1000;$("hudTime").textContent=fmt(el);
+    if(G.boss){const left=G.boss.limit-el;$("hudBest").textContent="のこり "+fmt(Math.max(0,left));if(left<=0&&!G.ended)endBoss(false);return}
+    if(G.best){const left=G.best-el,hb=$("hudBest");
+      if(left>=0){hb.textContent=`ベストまで あと${Math.ceil(left)}秒`;hb.className=""}else{hb.textContent=`ベスト ${fmt(G.best)} をこえた`;hb.className="over"}}},250);
+  window.scrollTo(0,0);
+}
+const startClock=()=>{if(!G.t0)G.t0=Date.now()};
+const cur=()=>G.queue[G.pos];
+function renderTrack(){$("track").innerHTML=Array.from({length:G.uniq},(_,i)=>`<span class="${i<G.cleared.size?"got":""}"></span>`).join("");
+  $("hudCount").textContent=`${G.cleared.size}/${G.uniq}`;$("hudMiss").textContent=`ミス ${G.miss}`}
+function blockHTML(){if(G.boss)return bossPanel();const ore=ORES[G.mode.ore].c;
+  return `<div class="target" id="tgt"><span class="blk" id="blk" style="--ore:${ore}"></span><svg viewBox="0 0 118 118">${CRACKS.map(d=>`<path d="${d}"/>`).join("")}</svg></div>`}
+function setCrack(f){const ps=document.querySelectorAll("#tgt path");const n=Math.round(f*ps.length);ps.forEach((p,i)=>p.style.opacity=i<n?1:0)}
+function hitAnim(){const b=$("blk");if(!b)return;b.classList.add("hit");setTimeout(()=>b.classList.remove("hit"),80)}
+function breakBlock(oreKey){
+  const t=$("tgt");if(!t)return;t.classList.add("broken");sfx.brk();
+  const col=ORES[oreKey].c;
+  for(let i=0;i<8;i++){const d=document.createElement("span");d.className="bit";const a=i/8*Math.PI*2;
+    d.style.setProperty("--dx",Math.cos(a)*90+"px");d.style.setProperty("--dy",Math.sin(a)*70-20+"px");
+    d.style.background=i%2?col:"var(--stone)";t.appendChild(d)}
+  const g=document.createElement("span");g.className="gain";g.textContent=`+1 ${ORES[oreKey].n}`;g.style.color=col;t.appendChild(g);
+}
+function showItem(){
+  const it=cur();G.wordMiss=0;G.charMiss=0;G.idx=0;G.busy=false;
+  const card=$("card");const tag=it.must?`<span class="must-tag">★書ける単語</span>`:"";
+  if(G.mode.type==="choice"){
+    const pool=allPool(G.st).filter(p=>p.ja!==it.ja);G.opts=shuffle([it,...shuffle(pool).slice(0,3)]);
+    card.innerHTML=`${tag}<div class="prompt-en">${esc(it.en)}</div>${blockHTML()}
+      <button class="speak" id="spk">🔊 もう一度聞く</button>
+      <div class="choices">${G.opts.map((o,i)=>`<button class="choice" data-i="${i}"><span class="k">${i+1}</span>${esc(o.ja)}</button>`).join("")}</div>
+      <div class="flash" id="flash"></div>`;
+    card.querySelectorAll(".choice").forEach(b=>b.onclick=()=>choose(+b.dataset.i));
+  }else if(G.mode.type==="puzzle"){
+    G.tiles=shuffle(it.en.split(" ").map((w,i)=>({w,i,used:false})));
+    if(G.tiles.map(t=>t.i).every((v,i)=>v===i)&&G.tiles.length>1)G.tiles.push(G.tiles.shift());
+    G.words=it.en.split(" ");
+    card.innerHTML=`<div class="prompt-ja" id="pja">${esc(it.ja)}</div>${blockHTML()}
+      <button class="speak" id="spk">🔊 もう一度聞く</button>
+      <div class="built" id="built"></div><div class="tiles" id="tiles"></div><div class="flash" id="flash"></div>`;
+    renderPuzzle();setTimeout(()=>say(it.en),150);
+  }else{
+    card.innerHTML=`${tag}<div class="prompt-ja" id="pja">${G.mode.listen?"🎧 聞いて打とう":esc(it.ja)}</div>${blockHTML()}
+      <button class="speak" id="spk">🔊 もう一度聞く</button>
+      <div class="slots" id="slots"></div><div class="flash" id="flash"></div>`;
+    renderSlots();
+  }
+  $("spk").onclick=()=>say(it.en);
+  if(G.mode.type==="choice"||G.mode.listen)setTimeout(()=>say(it.en),150);
+}
+const KEYS="1234567890";
+function renderPuzzle(){
+  $("built").innerHTML=G.words.map((w,i)=>`<span class="bslot${i<G.idx?" done":i===G.idx?" cur":""}">${i<G.idx?esc(w):"&nbsp;"}</span>`).join("");
+  $("tiles").innerHTML=G.tiles.map((t,j)=>`<button class="tile${t.used?" used":""}" data-j="${j}" ${t.used?"disabled":""}><span class="k">${KEYS[j]||""}</span>${esc(t.w)}</button>`).join("");
+  $("tiles").querySelectorAll(".tile:not([disabled])").forEach(b=>b.onclick=()=>pickTile(+b.dataset.j));
+}
+function pickTile(j){
+  const t=G.tiles[j];if(!t||t.used||G.busy)return;startClock();
+  if(t.w===G.words[G.idx]){
+    t.used=true;G.keys++;G.idx++;sfx.hit();hitAnim();setCrack(G.idx/G.words.length);renderPuzzle();
+    if(G.idx>=G.words.length)finishPuzzle();
+  }else{
+    G.miss++;G.wordMiss++;sfx.miss();$("hudMiss").textContent=`ミス ${G.miss}`;
+    const b=$("tiles").querySelector(`[data-j="${j}"]`);if(b){b.classList.remove("shake");void b.offsetWidth;b.classList.add("shake")}
+    if(G.wordMiss>=3){const k=G.tiles.findIndex(x=>!x.used&&x.w===G.words[G.idx]);const h=$("tiles").querySelector(`[data-j="${k}"]`);if(h)h.classList.add("glow")}
+  }
+}
+function finishPuzzle(){
+  const it=cur();G.busy=true;say(it.en);const clean=G.wordMiss===0,ore=oreFor(clean);
+  breakBlock(ore);gain(ore,1);
+  $("flash").textContent=clean?"ナイス!":`ミス ${G.wordMiss} → あとでもう一回出るよ`;
+  afterAnswer(it,clean);setTimeout(next,clean?1100:1600);
+}
+// ---------- reader ----------
+function sayAll(lines){if(!("speechSynthesis" in window))return;speechSynthesis.cancel();
+  lines.forEach(t=>{const u=new SpeechSynthesisUtterance(t.replace(/-/g," "));u.lang="en-US";if(voice)u.voice=voice;u.rate=.85;speechSynthesis.speak(u)})}
+function openReader(st){
+  const sh=$("stageSheet");
+  sh.innerHTML=`<h3>${esc(st.name)}</h3><p class="sub">${st.pages}・行をクリックすると、その文を聞けます</p>
+   <div class="row-btns" style="justify-content:flex-start;margin:0 0 10px"><button class="btn" id="allBtn">🔊 全部聞く</button><button class="btn sec" id="jaBtn">日本語を表示</button><button class="btn sec" id="stopBtn">止める</button></div>
+   <div class="reader" id="reader">${st.items.map((it,i)=>`<button class="rline" data-i="${i}"><span class="sp">${esc(it.sp)}</span><span><span class="en">${esc(it.en)}</span><span class="ja">${esc(it.ja)}</span></span></button>`).join("")}</div>
+   <div class="row-btns"><button class="btn sec" id="backBtn">ステージにもどる</button></div>`;
+  sh.querySelectorAll(".rline").forEach(b=>b.onclick=()=>say(st.items[+b.dataset.i].en));
+  $("allBtn").onclick=()=>sayAll(st.items.map(i=>i.en));
+  $("stopBtn").onclick=()=>speechSynthesis.cancel();
+  $("jaBtn").onclick=()=>{const r=$("reader");r.classList.toggle("showja");$("jaBtn").textContent=r.classList.contains("showja")?"日本語をかくす":"日本語を表示"};
+  $("backBtn").onclick=()=>{speechSynthesis.cancel();openStage(st.id)};
+  $("stageModal").classList.add("on");
+}
+function allPool(st){if(st.items.length>=4)return st.items;return WORLDS[0].stages.flatMap(s=>s.items)}
+const isFirst=(t,i)=>/[a-z]/i.test(t[i])&&(i===0||!/[a-z']/i.test(t[i-1]));
+function renderSlots(reveal){
+  const t=cur().en,box=$("slots");if(!box)return;
+  box.innerHTML=[...t].map((c,i)=>{const sp=c===" ";let cls="slot"+(sp?" sp":""),ch="";
+    if(i<G.idx){cls+=" done";ch=sp?"":c}
+    else{if(i===G.idx)cls+=" cur";
+      const gh=(G.mode.hint==="first"&&isFirst(t,i))||(i===G.idx&&reveal)||/[^a-z ]/i.test(c);
+      if(gh&&!sp){cls+=" hintch";ch=c}}
+    return `<span class="${cls}">${esc(ch)||"&nbsp;"}</span>`}).join("");
+}
+function typeKey(k){
+  const t=cur().en,want=t[G.idx];startClock();
+  if(k.toLowerCase()===want.toLowerCase()){
+    G.keys++;G.idx++;G.charMiss=0;sfx.hit();hitAnim();setCrack(G.idx/t.length);
+    if(G.idx>=t.length)return finishWord();renderSlots();
+  }else{
+    G.miss++;G.wordMiss++;G.charMiss++;sfx.miss();
+    if(G.boss&&G.wordMiss===3){G.boss.hearts--;G.boss.hp=Math.min(G.boss.max,G.boss.hp+2);updBoss();toast("ハートを1つ失った! ボスが回復した");if(G.boss.hearts<=0){endBoss(false);return}}
+    renderSlots(G.charMiss>=(G.mode.hint==="first"?2:3));
+    const b=$("slots");b.classList.remove("shake");void b.offsetWidth;b.classList.add("shake");
+    $("hudMiss").textContent=`ミス ${G.miss}`;
+  }
+}
+function oreFor(clean){return clean?G.mode.ore:"stone"}
+function finishWord(){
+  const it=cur();G.busy=true;renderSlots();if(G.mode.listen)$("pja").textContent=it.ja;
+  say(it.en);const clean=G.wordMiss===0;
+  if(G.boss){const dmg=clean?2:1;G.boss.hp=Math.max(0,G.boss.hp-dmg);updBoss(true);sfx.brk();
+    $("flash").textContent=clean?`ノーミス! ${dmg}ダメージ!`:`${dmg}ダメージ`;afterAnswer(it,clean);
+    if(G.boss.hp<=0){setTimeout(()=>endBoss(true),700);return}
+    setTimeout(next,clean?650:1000);return}
+  const ore=oreFor(clean);
+  breakBlock(ore);gain(ore,1);
+  $("flash").textContent=clean?"ナイス!":`ミス ${G.wordMiss} → あとでもう一回出るよ`;
+  afterAnswer(it,clean);setTimeout(next,clean?800:1400);
+}
+function choose(i){
+  if(G.busy)return;G.busy=true;startClock();
+  const it=cur(),ok=G.opts[i].ja===it.ja;const btns=$("card").querySelectorAll(".choice");
+  btns.forEach((b,j)=>{if(G.opts[j].ja===it.ja)b.classList.add("good")});
+  if(!ok){btns[i].classList.add("bad");G.miss++;sfx.miss();$("flash").textContent=`正解は「${it.ja}」`}
+  else{setCrack(1);$("flash").textContent="ナイス!"}
+  const ore=oreFor(ok);breakBlock(ore);gain(ore,1);
+  G.keys++;afterAnswer(it,ok);setTimeout(next,ok?700:1500);
+}
+function gain(ore,n){S.inv[ore]=(S.inv[ore]||0)+n;G.loot[ore]=(G.loot[ore]||0)+n}
+function afterAnswer(it,clean){
+  if(!G.st.text){const d=S.dex[it.en]||(S.dex[it.en]={lv:0});if(clean){const L=(G.st.review||G.boss)?2:G.lv;d.lv=Math.max(d.lv,L)}}
+  if(G.boss){G.cleared.add(it.en);if(!clean){const m=S.misses[it.en]||{ja:it.ja,must:!!it.must,count:0};m.count++;m.last=Date.now();S.misses[it.en]=m}save();renderTrack();return}
+  if(clean){if(!G.cleared.has(it.en)&&it.re===0)G.firstTry++;G.cleared.add(it.en);
+    if(G.st.review&&S.misses[it.en]){S.misses[it.en].count--;if(S.misses[it.en].count<=0)delete S.misses[it.en]}}
+  else{G.missed.set(it.en,it.ja);
+    const m=S.misses[it.en]||{ja:it.ja,must:!!it.must,count:0};m.count++;m.last=Date.now();S.misses[it.en]=m;
+    if(it.re<2)G.queue.splice(Math.min(G.queue.length,G.pos+4),0,{...it,re:it.re+1});else G.cleared.add(it.en)}
+  save();renderTrack();
+}
+function next(){G.pos++;if(G.pos>=G.queue.length)return G.boss?endBoss(G.boss.hp<=0):endGame();showItem()}
+function rankOf(){const acc=G.mode.type==="choice"?G.firstTry/G.uniq:G.keys/((G.keys+G.miss)||1);
+  return{r:acc>=.97?"S":acc>=.9?"A":acc>=.8?"B":"C",acc}}
+function endGame(){
+  clearInterval(G.timer);const sec=G.t0?(Date.now()-G.t0)/1000:0;const{r,acc}=rankOf();let msg="";
+  if(!G.st.review){const R=rec(G.st.id),old=R[G.lv],o={S:4,A:3,B:2,C:1};
+    if(!old||o[r]>o[old.rank]||(o[r]===o[old.rank]&&sec<old.best)){R[G.lv]={best:sec,rank:r};msg=old?"記録更新!":"初クリア!"}}
+  S.log.push({sid:G.st.id,lv:G.lv,sec:Math.round(sec),rank:r,miss:G.miss,at:Date.now()});if(S.log.length>200)S.log=S.log.slice(-200);
+  const chestMsg=awardStageChest(G.st,G.lv,r);
+  const dexMsg=checkDexComplete();
+  save();
+  const nextOpen=!G.st.review&&G.lv<4,ms=[...G.missed.entries()];
+  $("resultSheet").innerHTML=`<h3>採掘完了!</h3><div class="big">${r}</div><div class="newrec">${msg}</div>
+   <div class="rgrid"><div><b>${fmt(sec)}</b><span>タイム</span></div><div><b>${G.miss}</b><span>ミス</span></div><div><b>${Math.round(acc*100)}%</b><span>正確さ</span></div></div>
+   ${chestMsg}${dexMsg}
+   <p class="sub" style="margin:0">手に入れた鉱石(拠点づくりに使えます)</p>
+   <div class="loot">${Object.entries(G.loot).map(([k,n])=>`<span class="ore"><i style="background:${ORES[k].c}"></i>${ORES[k].n} ×${n}</span>`).join("")}</div>
+   ${ms.length?`<p class="sub" style="margin:0 0 6px">まちがえた単語(ミス復習に入りました)</p><div class="misslist">${ms.map(([e,j])=>`<div><b>${esc(e)}</b> … ${esc(j)}</div>`).join("")}</div>`:"<p>ノーミス!</p>"}
+   ${nextOpen?`<p class="sub" style="margin-top:12px">Lv${G.lv+1}「${lvOf(G.st,G.lv+1).name}」が開きました。ミスなしなら${ORES[lvOf(G.st,G.lv+1).ore].n}が出ます。</p>`:""}
+   <div class="row-btns" style="justify-content:center"><button class="btn sec" id="againBtn">もう一度</button>
+   ${nextOpen?`<button class="btn" id="nextBtn">Lv${G.lv+1}へ</button>`:""}<button class="btn sec" id="mapBtn">地上へ(拠点を見る)</button></div>`;
+  $("resultModal").classList.add("on");
+  const st=G.st,lv=G.lv;G.busy=true;
+  $("againBtn").onclick=()=>{closeModal("resultModal");startGame(st.review?findStage("review"):st,lv)};
+  if(nextOpen)$("nextBtn").onclick=()=>{closeModal("resultModal");startGame(st,lv+1)};
+  $("mapBtn").onclick=()=>{closeModal("resultModal");toHome()};
+  const oc=$("openChestBtn");if(oc)oc.onclick=()=>{closeModal("resultModal");toHome();openChests()};
+}
+function toHome(){if(G)clearInterval(G.timer);G=null;if("speechSynthesis" in window)speechSynthesis.cancel();
+  $("game").style.display="none";$("home").style.display="block";renderHome();window.scrollTo(0,0)}
+$("quitBtn").onclick=toHome;
+
+document.addEventListener("keydown",e=>{
+  if(!G||G.ended||$("resultModal").classList.contains("on"))return;
+  if(e.isComposing||e.key==="Process"){toast("半角英数(A)に切りかえてね");return}
+  if(e.key==="Enter"){e.preventDefault();say(cur().en);return}
+  if(e.key==="Escape"){toHome();return}
+  if(G.busy||e.ctrlKey||e.metaKey||e.altKey)return;
+  if(G.mode.type==="choice"){if(/^[1-4]$/.test(e.key)){e.preventDefault();choose(+e.key-1)}return}
+  if(G.mode.type==="puzzle"){const k=KEYS.indexOf(e.key);if(k>=0&&e.key.length===1){e.preventDefault();pickTile(k)}return}
+  if(e.key.length===1){e.preventDefault();typeKey(e.key)}
+});
+
+
+// ================= 拠点づくり =================
+const BLOCKS={
+ dirt:{n:"土",c:"#8a5f3d",cost:{stone:1}}, grass:{n:"草",c:"#5fa045",cost:{stone:1}}, cobble:{n:"石レンガ",c:"#8d8f94",cost:{stone:2}},
+ plank:{n:"木材",c:"#b8875a",cost:{copper:1}}, log:{n:"原木",c:"#6e4b2e",cost:{copper:1}}, leaf:{n:"葉っぱ",c:"#3f8a3a",cost:{copper:1}},
+ sand:{n:"砂",c:"#e6d29a",cost:{copper:1}},
+ glass:{n:"ガラス",c:"#bfe3f2",cost:{iron:1}}, brick:{n:"レンガ",c:"#a9504a",cost:{iron:1}}, roof:{n:"屋根",c:"#4f6d8f",cost:{iron:1}},
+ water:{n:"水",c:"#3a7bd5",cost:{iron:1}}, snow:{n:"雪",c:"#f7fbff",cost:{iron:1}},
+ crop:{n:"作物",c:"#d8c04a",cost:{copper:1}}, cloth:{n:"赤い布",c:"#c8323f",cost:{iron:1}},
+ goldb:{n:"金ブロック",c:"#f2c230",cost:{gold:1}}, rubyb:{n:"ルビーブロック",c:"#e0405a",cost:{ruby:1}}
+};
+const DECOS={flower:{n:"花",e:"🌸"},daisy:{n:"マーガレット",e:"🌼"},lantern:{n:"ランタン",e:"🏮"},flag:{n:"旗",e:"🚩"},
+ crystal:{n:"クリスタル",e:"💎"},crown:{n:"王冠",e:"👑"},trophy:{n:"ボストロフィー",e:"🏆"},
+ chick:{n:"ニワトリ",e:"🐔"},turtle:{n:"カメ",e:"🐢"},hedgehog:{n:"ハリネズミ",e:"🦔"},penguin:{n:"ペンギン",e:"🐧"},
+ fox:{n:"キツネ",e:"🦊"},koala:{n:"コアラ",e:"🐨"},elephant:{n:"ゾウ",e:"🐘"},kangaroo:{n:"カンガルー",e:"🦘"}};
+const BUILDINGS=["家","見張り塔","木と畑","風車","お城"];
+const PLANMAP={dirt:"dirt",grass:"grass",plank:"plank",log:"log",glass:"glass",roof:"roof",brick:"brick",cobble:"cobble",leaf:"leaf",crop:"crop",path:"sand",flag:"cloth"};
+const PLAN=new Map(BP.map(p=>[p.x+","+p.y,{blk:PLANMAP[p.m],b:p.b}]));
+function bpProgress(){const tot=BUILDINGS.map(()=>0),ok=BUILDINGS.map(()=>0);
+  PLAN.forEach((v,k)=>{tot[v.b]++;if(S.build[k]==="b:"+v.blk)ok[v.b]++});return{tot,ok}}
+function curBuilding(){const{tot,ok}=bpProgress();for(let i=0;i<BUILDINGS.length;i++)if(ok[i]<tot[i])return i;return -1}
+function planCell(k,v,cur,inBuild){const B=BLOCKS[v.blk];const st=v.b===cur?"cur":"other";
+  return `<div ${inBuild?`data-k="${k}" `:""}class="cell emp plan ${st}" style="--pc:${B.c}"></div>`}
+function checkBuildingDone(){const{tot,ok}=bpProgress();S.bpDone=S.bpDone||{};
+  for(let i=0;i<BUILDINGS.length;i++)if(ok[i]>=tot[i]&&!S.bpDone[i]){S.bpDone[i]=true;S.chests.push(i>=3?"ruby":"gold");save();
+    [523,659,784,1047].forEach((f,j)=>setTimeout(()=>tone(f,.15),j*110));
+    toast(`${BUILDINGS[i]}が完成! ${i>=3?"ルビー":"金"}の宝箱をゲット!`);return true}return false}
+const ORE_HINT={stone:"どのLvでもミスすると出る",copper:"Lv1をノーミスで",iron:"Lv2をノーミスで",gold:"Lv3をノーミスで",ruby:"Lv4をノーミスで"};
+let BS={tool:"place",sel:"b:dirt",plan:true,auto:true,paint:false};
+function costText(c){return Object.entries(c).map(([k,n])=>`${ORES[k].n}${n}`).join("+")}
+function canPay(c){return Object.entries(c).every(([k,n])=>(S.inv[k]||0)>=n)}
+function openBuild(){renderBuild();$("buildModal").classList.add("on")}
+function holdingInfo(){
+  const[t,id]=BS.sel.split(":");
+  if(t==="b"){const B=BLOCKS[id];const max=Math.min(...Object.entries(B.cost).map(([o,n])=>Math.floor((S.inv[o]||0)/n)));
+    return `<i style="background:${B.c}"></i><div><b>${B.n}</b><span>${BS.auto?"点線の外に自由に置くときのブロック・":""}${costText(B.cost)}個で1つ・いまは <b>あと${max}個</b> 置ける</span></div>`}
+  const D=DECOS[id];return `<span class="e">${D.e}</span><div><b>${D.n}</b><span>あと ${S.items[id]||0}個 置ける</span></div>`}
+function renderBuild(){
+  const cb=curBuilding();const{tot,ok}=bpProgress();
+  let g="";for(let y=0;y<16;y++)for(let x=0;x<64;x++){const k=x+","+y,v=PLAN.get(k);
+    g+=(BS.plan&&!S.build[k]&&v)?planCell(k,v,cb,true):cellHTML(S.build[k]).replace('<div class="cell','<div data-k="'+k+'" class="cell')}
+  const goal=`<div class="goal"><b style="font-size:14px">目標:</b>${BUILDINGS.map((n,i)=>`<span class="g ${ok[i]>=tot[i]?"done":i===cb?"now":""}">${ok[i]>=tot[i]?"✔ ":""}${n} ${ok[i]}/${tot[i]}</span>`).join("")}<span class="sub" style="margin:0">完成ごとに宝箱!</span></div>`;
+  const[t0,id0]=BS.sel.split(":");const pv=t0==="b"?BLOCKS[id0].c:"rgba(255,255,255,.6)";
+  const bl=Object.entries(BLOCKS).map(([id,B])=>{const ok=canPay(B.cost);
+    return `<button class="pal${BS.sel==="b:"+id?" sel":""}${ok?"":" cant"}" data-sel="b:${id}" title="${ok?"":"鉱石が足りない"}"><i style="background:${B.c}"></i>${B.n}<small>${costText(B.cost)}</small></button>`}).join("");
+  const dc=Object.entries(S.items).filter(([k,v])=>v>0).map(([id,v])=>`<button class="pal${BS.sel==="d:"+id?" sel":""}" data-sel="d:${id}"><span class="e">${DECOS[id].e}</span>${DECOS[id].n}<small>×${v}</small></button>`).join("");
+  $("buildSheet").innerHTML=`<h3>拠点づくり</h3>
+   ${goal}
+   <div class="steps"><span class="step"><span class="n">1</span>色のついた点線のマスをクリック(おしたまま動かすと連続)</span><span class="step"><span class="n">2</span>お手本の色のブロックが自動で置かれる</span><span class="step"><span class="n">3</span>点線がぜんぶうまったら完成!</span></div>
+   <div style="display:flex;gap:10px;align-items:stretch;flex-wrap:wrap;margin-bottom:8px">
+     <div class="holding" style="flex:1;margin:0" id="holding">${holdingInfo()}</div>
+     <button class="bigtool${BS.tool==="place"?" on":""}" data-tool="place">🧱 置く</button>
+     <button class="bigtool${BS.tool==="break"?" on":""}" data-tool="break">⛏ こわす(鉱石はもどる)</button>
+   </div>
+   <div class="bgrid ${BS.tool==="place"?"placing":"breaking"}" id="bgrid" style="--pv:${pv}">${g}</div>
+   <div class="tools"><span class="inv" style="margin:0">${Object.entries(ORES).map(([k,o])=>`<span class="ore" style="background:#fffaf0;color:var(--ink)"><i style="background:${o.c}"></i>${o.n} ${S.inv[k]||0}</span>`).join("")}</span>
+     <button class="tool${BS.plan?" on":""}" id="planBtn">お手本の点線:${BS.plan?"表示中":"かくしている"}</button>
+     <button class="tool${BS.auto?" on":""}" id="autoBtn">点線のマスはお手本の色で置く:${BS.auto?"オン":"オフ"}</button></div>
+   <div class="secttl">ブロック(うすいのは鉱石が足りないもの)</div><div class="palette">${bl}</div>
+   <div class="secttl">かざり・ペット(宝箱から出る)</div><div class="palette">${dc||'<span class="sub" style="margin:0">まだない。宝箱をあけると手に入るよ</span>'}</div>
+   <div class="row-btns"><button class="btn" id="buildClose">できた!</button></div>`;
+  const sh=$("buildSheet");
+  sh.querySelectorAll("[data-sel]").forEach(b=>b.onclick=()=>{BS.sel=b.dataset.sel;BS.tool="place";renderBuild()});
+  sh.querySelectorAll("[data-tool]").forEach(b=>b.onclick=()=>{BS.tool=b.dataset.tool;renderBuild()});
+  $("planBtn").onclick=()=>{BS.plan=!BS.plan;renderBuild()};
+  $("autoBtn").onclick=()=>{BS.auto=!BS.auto;renderBuild()};
+  $("buildClose").onclick=()=>{closeModal("buildModal");renderHome()};
+  const grid=$("bgrid");
+  const act=el=>{if(!el||!el.dataset||!el.dataset.k)return;applyCell(el.dataset.k)};
+  grid.onpointerdown=e=>{BS.paint=true;act(e.target.closest(".cell"));e.preventDefault()};
+  grid.onpointermove=e=>{if(!BS.paint)return;const el=document.elementFromPoint(e.clientX,e.clientY);act(el&&el.closest&&el.closest(".cell"))};
+  window.onpointerup=()=>{BS.paint=false};
+}
+function applyCell(k){
+  const cur=S.build[k];
+  if(BS.tool==="break"){if(!cur)return;const[t,id]=cur.split(":");
+    if(t==="b")Object.entries(BLOCKS[id].cost).forEach(([o,n])=>S.inv[o]=(S.inv[o]||0)+n);else S.items[id]=(S.items[id]||0)+1;
+    delete S.build[k];tone(200,.05);save();refreshCell(k);return}
+  if(cur)return;
+  let sel=BS.sel;const pv=PLAN.get(k);if(BS.auto&&pv)sel="b:"+pv.blk;
+  const[t,id]=sel.split(":");
+  if(t==="b"){const c=BLOCKS[id].cost;if(!canPay(c)){const lack=Object.keys(c).find(o=>(S.inv[o]||0)<c[o]);BS.paint=false;toast(`${ORES[lack].n}が足りない! ${ORE_HINT[lack]}掘ると手に入るよ`);return}
+    Object.entries(c).forEach(([o,n])=>S.inv[o]-=n)}
+  else{if(!(S.items[id]>0)){toast("もうない! 宝箱で集めよう");BS.paint=false;return}S.items[id]--}
+  S.build[k]=sel;tone(660,.04);save();refreshCell(k);
+  if(pv&&checkBuildingDone()){BS.paint=false;setTimeout(renderBuild,50)}
+}
+function refreshCell(k){
+  const el=document.querySelector(`#bgrid [data-k="${k}"]`);if(!el)return;
+  const tmp=document.createElement("div");tmp.innerHTML=cellHTML(S.build[k]).replace('<div class="cell','<div data-k="'+k+'" class="cell');
+  const n=tmp.firstChild;n.classList.add("new");el.replaceWith(n);
+  const hd=$("holding");if(hd)hd.innerHTML=holdingInfo();
+  const gl=$("buildSheet").querySelector(".goal");if(gl){const cb=curBuilding();const{tot,ok}=bpProgress();gl.innerHTML=`<b style="font-size:14px">目標:</b>${BUILDINGS.map((n,i)=>`<span class="g ${ok[i]>=tot[i]?"done":i===cb?"now":""}">${ok[i]>=tot[i]?"✔ ":""}${n} ${ok[i]}/${tot[i]}</span>`).join("")}<span class="sub" style="margin:0">完成ごとに宝箱!</span>`}
+  const inv=$("buildSheet").querySelector(".tools .inv");if(inv)inv.innerHTML=Object.entries(ORES).map(([kk,o])=>`<span class="ore" style="background:#fffaf0;color:var(--ink)"><i style="background:${o.c}"></i>${o.n} ${S.inv[kk]||0}</span>`).join("");
+  if(BS.sel.startsWith("d:")||BS.tool==="break"){const sel=BS.sel;setTimeout(()=>{if(!BS.paint)renderBuild()},0)}
+}
+$("buildBtn").onclick=openBuild;
+
+// ================= 宝箱 =================
+const CHEST={wood:{n:"木の宝箱",c:"#b8875a",w:[70,25,5,0]},iron:{n:"鉄の宝箱",c:"#ddd6cb",w:[45,38,15,2]},gold:{n:"金の宝箱",c:"#f2c230",w:[25,40,28,7]},ruby:{n:"ルビーの宝箱",c:"#e0405a",w:[0,25,50,25]}};
+const RAR=["コモン","レア","スーパーレア","ウルトラレア"],RARC=["#8a8f96","#3a7bd5","#a855f7","#e0a800"];
+const LOOT=[
+ [{ore:"stone",n:6},{ore:"copper",n:4},{deco:"flower"},{deco:"daisy"}],
+ [{ore:"iron",n:3},{ore:"gold",n:1},{deco:"lantern"},{deco:"flag"},{deco:"chick"},{deco:"turtle"}],
+ [{ore:"gold",n:3},{ore:"ruby",n:1},{deco:"crystal"},{deco:"hedgehog"},{deco:"penguin"},{deco:"fox"}],
+ [{ore:"ruby",n:3},{deco:"crown"},{deco:"koala"},{deco:"elephant"},{deco:"kangaroo"}]];
+const today=()=>new Date().toLocaleDateString("sv");
+function awardStageChest(st,lv,rank){
+  const key=today()+"|"+st.id+"|"+lv;const n=S.chestDay[key]||0;
+  for(const k of Object.keys(S.chestDay))if(!k.startsWith(today()))delete S.chestDay[k];
+  if(n>=3)return `<p class="sub" style="margin:4px 0">このステージ・このLvの宝箱は今日はおしまい(1日3回まで)。ほかのステージで探そう!</p>`;
+  S.chestDay[key]=n+1;
+  const tier=st.review?"wood":rank==="S"?"gold":rank==="A"?"iron":"wood";
+  S.chests.push(tier);
+  return `<p style="margin:6px 0;font-weight:800">🎁 ${CHEST[tier].n}を手に入れた! <button class="btn" id="openChestBtn" style="padding:4px 12px">あける</button></p>`+(st.review?"":`<p class="sub" style="margin:0">ランクSなら金の宝箱、Aなら鉄の宝箱が出るよ</p>`);
+}
+function rollLoot(tier){const w=CHEST[tier].w;let r=Math.random()*100,rar=0;for(let i=0;i<4;i++){if(r<w[i]){rar=i;break}r-=w[i]}
+  const list=LOOT[rar];return{rar,item:list[Math.floor(Math.random()*list.length)]}}
+function openChests(){
+  if(!S.chests.length){$("chestSheet").innerHTML=`<h3>宝箱</h3><p class="sub">宝箱はまだない。ステージをクリアすると出るよ。ランクが高いほどいい宝箱!</p><div class="row-btns" style="justify-content:center"><button class="btn" id="cClose">とじる</button></div>`;$("chestModal").classList.add("on");$("cClose").onclick=()=>closeModal("chestModal");return}
+  const tier=S.chests[0];
+  $("chestSheet").innerHTML=`<h3>${CHEST[tier].n}</h3><p class="sub">のこり ${S.chests.length}個</p>
+    <div class="chestbox" id="cbox" style="--cc:${CHEST[tier].c}"><div class="body"></div><div class="lid"></div><div class="lock"></div></div>
+    <div id="cres" style="min-height:120px"></div>
+    <div class="row-btns" style="justify-content:center"><button class="btn" id="cOpen">あける!</button><button class="btn sec" id="cClose">あとで</button></div>`;
+  $("chestModal").classList.add("on");
+  $("cClose").onclick=()=>{closeModal("chestModal");renderHome()};
+  $("cOpen").onclick=()=>{
+    const b=$("cOpen");b.disabled=true;const box=$("cbox");box.classList.add("shake");tone(300,.1);
+    setTimeout(()=>{box.classList.remove("shake");box.classList.add("open");
+      S.chests.shift();const{rar,item}=rollLoot(tier);
+      let icon,name;
+      if(item.ore){S.inv[item.ore]=(S.inv[item.ore]||0)+item.n;icon=`<i style="background:${ORES[item.ore].c}"></i>`;name=`${ORES[item.ore].n} ×${item.n}`}
+      else{const isNew=!(S.items[item.deco]>0)&&!Object.values(S.build).includes("d:"+item.deco);S.items[item.deco]=(S.items[item.deco]||0)+1;icon=DECOS[item.deco].e;name=DECOS[item.deco].n+(isNew?" (NEW!)":"")}
+      save();
+      [523,659,784,1047].slice(0,rar+2).forEach((f,i)=>setTimeout(()=>tone(f,.12),i*110));
+      $("cres").innerHTML=`<div class="rar" style="background:${RARC[rar]}">${RAR[rar]}</div><div class="prize">${icon}</div><div style="font-weight:800;font-size:18px">${name}</div>`;
+      b.textContent=S.chests.length?"次の宝箱をあける":"おしまい";b.disabled=false;
+      b.onclick=()=>{if(S.chests.length)openChests();else{closeModal("chestModal");renderHome()}};
+    },900);
+  };
+}
+$("chestBtn").onclick=openChests;
+
+// ================= 単語図鑑 =================
+function layerWords(w){const seen=new Set(),out=[];w.stages.filter(s=>!s.text).forEach(s=>s.items.forEach(i=>{if(!seen.has(i.en)){seen.add(i.en);out.push(i)}}));return out}
+function dexStats(){const all=new Map();WORLDS.filter(w=>w.stages).forEach(w=>layerWords(w).forEach(i=>all.set(i.en,i)));
+  let seen=0,gold=0;all.forEach((i,en)=>{const d=S.dex[en];if(d){seen++;if(d.lv>=3)gold++}});return{total:all.size,seen,gold}}
+function checkDexComplete(){let msg="";
+  WORLDS.filter(w=>w.stages).forEach(w=>{if(S.dexDone[w.id])return;const ws=layerWords(w);
+    if(ws.every(i=>S.dex[i.en]&&S.dex[i.en].lv>=3)){S.dexDone[w.id]=true;S.chests.push("ruby");msg+=`<p style="font-weight:800;margin:4px 0">📖 地下${w.id}層の図鑑がぜんぶ金枠に! ルビーの宝箱をゲット!</p>`}});return msg}
+let dexTab=null;
+function openDex(){
+  const ws=WORLDS.filter(w=>w.stages);if(dexTab==null)dexTab=ws[0].id;
+  const st=dexStats();const w=ws.find(x=>x.id===dexTab);const words=layerWords(w);
+  const lvName=["見つけた","銅枠","鉄枠","金枠","ルビー枠"];
+  const got=words.filter(i=>S.dex[i.en]).length,goldN=words.filter(i=>S.dex[i.en]&&S.dex[i.en].lv>=3).length;
+  $("dexSheet").innerHTML=`<h3>単語図鑑</h3><p class="sub">見つけた単語 ${st.seen}/${st.total}。カードを押すと発音が聞けるよ。</p>
+   <div class="chips"><span class="chip">ミスなしでクリアすると枠の色がかわる →</span><span class="chip"><i style="background:var(--copper)"></i>Lv1</span><span class="chip"><i style="background:#9a948a"></i>Lv2</span><span class="chip"><i style="background:var(--gold)"></i>Lv3</span><span class="chip"><i style="background:var(--ruby)"></i>Lv4</span><span class="chip">層ぜんぶ金枠でルビーの宝箱!</span></div>
+   <div class="dexbar">${ws.map(x=>`<button class="tool${x.id===dexTab?" on":""}" data-tab="${x.id}">地下${x.id}層${S.dexDone[x.id]?" 👑":""}</button>`).join("")}</div>
+   <div style="font-weight:800">地下${w.id}層 ${esc(w.title)}:発見 ${got}/${words.length}・金枠 ${goldN}/${words.length}</div>
+   <div class="prog2"><i style="width:${Math.round(goldN/words.length*100)}%"></i></div>
+   <div class="dexgrid" style="margin-top:10px">${words.map(i=>{const d=S.dex[i.en];
+     return d?`<button class="dcard l${d.lv}" data-say="${esc(i.en)}"><b>${i.must?"★":""}${esc(i.en)}</b><span>${esc(i.ja)}<br>${lvName[d.lv]}</span></button>`
+             :`<div class="dcard unk"><b>？？？</b><span>${i.ja.length>8?esc(i.ja.slice(0,8))+"…":esc(i.ja)}</span></div>`}).join("")}</div>
+   <div class="row-btns"><button class="btn" id="dClose">とじる</button></div>`;
+  $("dexSheet").querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{dexTab=+b.dataset.tab;openDex()});
+  $("dexSheet").querySelectorAll("[data-say]").forEach(b=>b.onclick=()=>say(b.dataset.say));
+  $("dClose").onclick=()=>closeModal("dexModal");
+  $("dexModal").classList.add("on");
+}
+$("dexBtn").onclick=openDex;
+
+// ================= 層ボス =================
+const BOSS_HP=30,BOSS_TIME=180;
+const BOSS={4:{name:"いなりゴーレム",c:"#c9a26b",d:"#7a5a2e"},5:{name:"パジャマゴースト",c:"#b9a6e8",d:"#5b4a99"},6:{name:"サバンナビースト",c:"#d9a441",d:"#7a4f12"},7:{name:"リーフクラーケン",c:"#4fb3c9",d:"#1f5f72"}};
+const BOSS_PAT=["..XXXXXX..",".XXXXXXXX.","XXEEXXEEXX","XXEPXXEPXX","XXXXXXXXXX","XXMMMMMMXX",".XXMXXMXX.","XX.XXXX.XX","XX.XXXX.XX","XX......XX"];
+function bossUnlocked(w){return w.stages.filter(s=>!s.text).every(s=>!!rec(s.id)[2])}
+function bossSprite(id){const B=BOSS[id];return BOSS_PAT.join("").split("").map(ch=>`<span style="background:${ch==="X"?B.c:ch==="E"?"#fff":ch==="P"?"#111":ch==="M"?B.d:"transparent"}"></span>`).join("")}
+function openBoss(id){
+  const w=WORLDS.find(x=>x.id===id),ok=bossUnlocked(w),B=BOSS[id];const sh=$("stageSheet");
+  const need=w.stages.filter(s=>!s.text&&!rec(s.id)[2]).map(s=>s.id).join("、");
+  sh.innerHTML=`<h3>層ボス:${esc(B.name)}</h3><p class="sub">地下${id}層の単語がランダムに出るよ</p>
+   <div style="display:flex;gap:16px;align-items:center;margin:8px 0"><div class="bossspr" style="transform:scale(1.4);margin:10px">${bossSprite(id)}</div>
+   <div style="font-size:15px;line-height:1.8">⌨ 日本語を見て英語を打つと、ボスにダメージ<br>⏱ 3分以内にたおそう<br>❤ 1つの単語で3回ミスするとハートが減る(3つなくなると負け)<br><b>🎁 勝つとルビーの宝箱!</b></div></div>
+   ${ok?"":`<p style="font-weight:800;color:var(--miss)">まだ挑戦できない:${need} を Lv2 までクリアしよう</p>`}
+   <div class="row-btns"><button class="btn sec" data-close>とじる</button>${ok?`<button class="btn" id="bossGo">挑戦する!</button>`:""}</div>`;
+  sh.querySelector("[data-close]").onclick=()=>closeModal("stageModal");
+  if(ok)$("bossGo").onclick=()=>{closeModal("stageModal");
+    const items=shuffle(layerWords(w)).slice(0,25);
+    startGame({id:"boss-"+id,bid:id,name:B.name,boss:true,items},2);G.queue=items.map(i=>({...i,re:0}));G.uniq=items.length;renderTrack();showItem()};
+  $("stageModal").classList.add("on");
+}
+function bossPanel(){const id=G.st.bid,b=G.boss;
+  return `<div class="bosspanel"><div class="bossspr" id="blk">${bossSprite(id)}</div><div class="bossinfo"><b>${esc(BOSS[id].name)}</b>
+   <div class="hpbar"><i id="hpI" style="width:${b.hp/b.max*100}%"></i></div><div style="display:flex;justify-content:space-between"><span id="hpT">HP ${b.hp}/${b.max}</span><span class="hearts" id="hrt">${"❤".repeat(b.hearts)}${"🖤".repeat(3-b.hearts)}</span></div></div></div>`}
+function updBoss(hurt){const b=G.boss;const i=$("hpI");if(i)i.style.width=(b.hp/b.max*100)+"%";const t=$("hpT");if(t)t.textContent=`HP ${b.hp}/${b.max}`;
+  const h=$("hrt");if(h)h.textContent="❤".repeat(Math.max(0,b.hearts))+"🖤".repeat(3-Math.max(0,b.hearts));
+  if(hurt){const s=$("blk");if(s){s.classList.remove("hurt");void s.offsetWidth;s.classList.add("hurt")}}}
+function endBoss(win){
+  if(!G||G.ended)return;G.ended=true;G.busy=true;clearInterval(G.timer);
+  const id=G.st.bid,first=win&&!S.bossWin[id];
+  if(win){S.chests.push("ruby");if(first){S.bossWin[id]=true;S.items.trophy=(S.items.trophy||0)+1}
+    [523,659,784,1047,1319].forEach((f,i)=>setTimeout(()=>tone(f,.15),i*120))}else tone(150,.4,"sawtooth");
+  save();const ms=[...G.missed.entries()];
+  $("resultSheet").innerHTML=win?`<h3>ボス撃破!</h3><div class="bossspr" style="margin:10px auto;opacity:.7;transform:rotate(90deg)">${bossSprite(id)}</div>
+     <p style="font-weight:800">🎁 ルビーの宝箱を手に入れた!${first?"<br>🏆 ボストロフィーも手に入れた!(拠点にかざれるよ)":""}</p>`
+    :`<h3>やられた…</h3><div class="bossspr" style="margin:10px auto">${bossSprite(id)}</div><p>ボスの残りHP ${G.boss.hp}。まちがえた単語をミス復習で練習して、もう一度挑戦しよう!</p>`;
+  $("resultSheet").innerHTML+=`${ms.length?`<div class="misslist">${ms.map(([e,j])=>`<div><b>${esc(e)}</b> … ${esc(j)}</div>`).join("")}</div>`:""}
+   <div class="row-btns" style="justify-content:center"><button class="btn sec" id="bAgain">もう一度挑戦</button>${win?`<button class="btn" id="bChest">宝箱をあける</button>`:""}<button class="btn sec" id="bHome">地上へ</button></div>`;
+  $("resultModal").classList.add("on");
+  $("bAgain").onclick=()=>{closeModal("resultModal");toHome();openBoss(id)};
+  $("bHome").onclick=()=>{closeModal("resultModal");toHome()};
+  if(win)$("bChest").onclick=()=>{closeModal("resultModal");toHome();openChests()};
+}
+
+
+// ================= あそびかた =================
+function openHelp(){
+  $("helpSheet").innerHTML=`<h3>あそびかた</h3><p class="sub">やることは「掘る → 集める → 建てる」だけ!</p>
+  <div class="helpgrid">
+   <div class="hcard"><div class="ic">⛏</div><div><b>1. 掘る</b><span>単語を打つとブロックがこわれて、鉱石が出る。<br>ミスなしだと、Lvごとにいい鉱石が出るよ。</span>
+     <div class="chips"><span class="chip"><i style="background:var(--copper)"></i>Lv1 銅</span><span class="chip"><i style="background:var(--iron)"></i>Lv2 鉄</span><span class="chip"><i style="background:var(--gold)"></i>Lv3 金</span><span class="chip"><i style="background:var(--ruby)"></i>Lv4 ルビー</span><span class="chip"><i style="background:var(--stone)"></i>ミスすると石</span></div></div></div>
+   <div class="hcard"><div class="ic">🎁</div><div><b>2. 宝箱をあける</b><span>ステージをクリアすると宝箱。ランクSなら金の宝箱で、ペットやレアな鉱石が出やすい。</span></div></div>
+   <div class="hcard"><div class="ic">🧱</div><div><b>3. 拠点を建てる</b><span>「拠点をつくる」で、点線のお手本のマスをクリックしてブロックを置く。家→塔→木と畑→風車→お城の順に完成させると、そのたびに宝箱!</span></div></div>
+   <div class="hcard"><div class="ic">👾</div><div><b>4. ボスをたおす</b><span>その層の単語ステージを全部 Lv2 までクリアするとボスが出る。たおすとルビーの宝箱!</span></div></div>
+   <div class="hcard"><div class="ic">📖</div><div><b>5. 図鑑をうめる</b><span>出会った単語が図鑑にのる。ミスなしでクリアするほど枠がかっこよくなる。</span></div></div>
+  </div>
+  <p class="sub" style="margin-top:10px">迷ったら、いちばん上の「▶ 掘りに行く」を押せばOK!</p>
+  <div class="row-btns"><button class="btn" id="hClose">わかった!</button></div>`;
+  $("hClose").onclick=()=>{closeModal("helpModal");if(!S.seenHelp){S.seenHelp=true;save()}};
+  $("helpModal").classList.add("on");
+}
+$("helpBtn").onclick=openHelp;
+
+// ---------- parent ----------
+$("parentBtn").onclick=()=>{
+  const ms=Object.entries(S.misses).sort((a,b)=>b[1].count-a[1].count);
+  const rows=WORLDS.filter(w=>!w.locked).flatMap(w=>w.stages).map(s=>{const r=rec(s.id);
+    return `<tr><td>${s.text?"":s.id+" "}${esc(s.name)}</td>${[1,2,3,4].map(l=>`<td>${r[l]?r[l].rank+" "+fmt(r[l].best):"–"}</td>`).join("")}</tr>`}).join("");
+  const days=new Set(S.log.map(l=>new Date(l.at).toLocaleDateString("ja-JP"))).size;
+  const last=S.log.length?new Date(S.log[S.log.length-1].at).toLocaleString("ja-JP"):"まだありません";
+  $("parentSheet").innerHTML=`<h3>おうちの人へ</h3><p class="sub">プレイした日数 ${days}日・最後のプレイ ${last}・拠点ブロック ${Math.min(oreTotal(),BP.length)}/${BP.length}</p>
+   <div class="tbl"><table><tr><th>ステージ</th><th>Lv1</th><th>Lv2</th><th>Lv3</th><th>Lv4</th></tr>${rows}</table></div>
+   <p class="sub" style="margin-top:16px">まちがえた単語(多い順)。期末前の「紙に書く練習」は、ここの★付きの単語を中心に。</p>
+   <div class="tbl"><table><tr><th>英語</th><th>意味</th><th>回数</th></tr>${ms.length?ms.map(([e,v])=>`<tr><td>${v.must?"★":""}${esc(e)}</td><td>${esc(v.ja)}</td><td>${v.count}</td></tr>`).join(""):`<tr><td colspan="3">まだありません</td></tr>`}</table></div>
+   <div class="row-btns"><button class="btn sec" id="resetBtn">記録をすべて消す</button><button class="btn" id="pClose">とじる</button></div>`;
+  $("pClose").onclick=()=>closeModal("parentModal");
+  $("resetBtn").onclick=()=>{if(confirm("記録と拠点をすべて消します。よろしいですか?")){S={stages:{},misses:{},log:[],inv:{stone:0,copper:0,iron:0,gold:0,ruby:0},placed:0,build:{},items:{},dex:{},chests:[],chestDay:{},bossWin:{},dexDone:{}};save();lastPlaced=null;closeModal("parentModal");renderHome()}};
+  $("parentModal").classList.add("on");
+};
+document.querySelectorAll(".modal").forEach(m=>m.addEventListener("click",e=>{if(e.target===m&&m.id!=="resultModal")m.classList.remove("on")}));
+renderHome();
+if(!S.seenHelp)setTimeout(openHelp,300);
+</script>
+</body>
+</html>

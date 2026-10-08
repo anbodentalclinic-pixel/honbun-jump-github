@@ -4,8 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>英単語クラフト</title>
-<meta name="robots" content="noindex,nofollow">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛏️</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap" rel="stylesheet">
@@ -274,6 +272,12 @@ th,td{border-bottom:1px solid #cbbfa9;padding:6px 4px;text-align:left}
 .mobile-note{display:none;margin-top:12px;font-size:14px;background:var(--bg2);border:2px solid var(--edge);padding:8px 12px}
 @media (hover:none) and (pointer:coarse){.mobile-note{display:block}}
 @media (max-width:560px){.choices{grid-template-columns:1fr}.slot{font-size:26px;min-width:22px;height:40px}}
+.target.t3d{width:260px;height:210px}
+.h3d{position:absolute;inset:-34px -110px;pointer-events:none}
+.h3d canvas,.base3d canvas{display:block;width:100%;height:100%}
+.bosspanel .h3d{position:relative;inset:auto;width:190px;height:180px;flex:none}
+.base3d{display:none;width:100%;aspect-ratio:3/1;min-height:180px;touch-action:pan-y;cursor:grab}
+.viewbtn{font:inherit;font-size:13px;padding:3px 10px;border:2px solid var(--edge);background:var(--panel);color:var(--ink);cursor:pointer}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -281,14 +285,15 @@ th,td{border-bottom:1px solid #cbbfa9;padding:6px 4px;text-align:left}
 <div class="wrap" id="home">
   <div class="top">
     <h1 class="logo">英単語クラフト<small>単語を打って掘る。集めた鉱石で拠点を建てる。</small></h1>
-    <button class="ghost" id="parentBtn">おうちの人へ</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="ghost bgmbtn" id="bgmBtn">♪ BGM オン</button><button class="ghost" id="parentBtn">おうちの人へ</button></div>
   </div>
   <div class="mobile-note">このゲームはパソコンのキーボードで遊ぶ作りです。</div>
 
   <section class="hero" id="hero"></section>
   <section class="base">
-    <div class="base-head"><h2>きみの拠点</h2><span class="prog" id="baseProg"></span></div>
+    <div class="base-head"><h2>きみの拠点</h2><span class="prog" id="baseProg"></span><button class="viewbtn" id="viewBtn" style="display:none">2Dで見る</button></div>
     <div class="grid" id="grid"></div>
+    <div class="base3d" id="base3d" role="img" aria-label="拠点の3D表示。ドラッグで回せる"></div>
     <div class="empty-base" id="emptyBase">まだ何もない。「拠点をつくる」でブロックを置いてみよう</div>
   </section>
   <div class="homebar">
@@ -311,7 +316,7 @@ th,td{border-bottom:1px solid #cbbfa9;padding:6px 4px;text-align:left}
   <div class="mine" id="card"></div>
   <div class="track" id="track"></div>
   <p class="help" id="help"></p>
-  <div class="row-btns"><button class="btn sec" id="quitBtn">やめて地上へ</button></div>
+  <div class="row-btns"><button class="btn sec bgmbtn" id="bgmBtn2">♪ BGM オン</button><button class="btn sec" id="quitBtn">やめて地上へ</button></div>
 </div>
 
 <div class="modal" id="stageModal"><div class="sheet" id="stageSheet"></div></div>
@@ -323,6 +328,7 @@ th,td{border-bottom:1px solid #cbbfa9;padding:6px 4px;text-align:left}
 <div class="modal" id="parentModal"><div class="sheet" id="parentSheet"></div></div>
 <div class="toast" id="toast"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 // ---------- data (Here We Go! 1 / Program 4) ----------
 const W = (en, ja, must=false) => ({en, ja, must});
@@ -740,6 +746,207 @@ const unlockedLv=(sid,l)=>l===1||!!rec(sid)[l-1];
 const reviewItems=()=>Object.entries(S.misses).sort((a,b)=>b[1].count-a[1].count).slice(0,15).map(([en,v])=>W(en,v.ja,v.must));
 const stageOre=(s,i)=>s.text?"var(--ruby)":["var(--copper)","var(--iron)","var(--gold)","var(--copper)","var(--iron)"][i%5];
 
+// ================= BGM (オリジナル・自動生成) =================
+const SONGS={
+ home:{bpm:62,vol:.14,style:"calm",bars:[[53,57,60,64],[57,60,64,67],[50,53,57,60],[48,52,55,59],[53,57,60,65],[52,55,59,64],[50,53,57,62],[55,59,62,65]],scale:[72,74,76,79,81,84,86,88]},
+ game:{bpm:78,vol:.085,style:"arp",bars:[[57,60,64],[53,57,60],[48,52,55],[55,59,62]],scale:[69,71,72,74,76,79,81]},
+ boss:{bpm:100,vol:.1,style:"pulse",bars:[[50,53,57],[46,50,53],[43,46,50],[45,49,52]],scale:[62,65,67,69,70,72,74]}
+};
+const BGM={on:S.bgm!==false,mode:"home",want:"home",fade:1,started:false,timer:null,barT:0,bar:0,mel:3,bus:null,master:null};
+function bgmSetup(){
+  try{AC=AC||new (window.AudioContext||window.webkitAudioContext)()}catch(e){return false}
+  if(AC.state==="suspended")AC.resume();
+  if(BGM.master)return true;
+  const m=AC.createGain();m.gain.value=0;m.connect(AC.destination);
+  const lp=AC.createBiquadFilter();lp.type="lowpass";lp.frequency.value=2600;
+  const dry=AC.createGain();dry.gain.value=.75;const wet=AC.createGain();wet.gain.value=.5;
+  const cv=AC.createConvolver(),len=Math.floor(AC.sampleRate*2.8),ir=AC.createBuffer(2,len,AC.sampleRate);
+  for(let ch=0;ch<2;ch++){const d=ir.getChannelData(ch);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3)}
+  cv.buffer=ir;lp.connect(dry).connect(m);lp.connect(cv);cv.connect(wet).connect(m);
+  BGM.bus=lp;BGM.master=m;return true;
+}
+function pnote(mi,t,dur,vel){
+  const f=440*Math.pow(2,(mi-69)/12),o1=AC.createOscillator(),o2=AC.createOscillator(),g=AC.createGain(),g2=AC.createGain();
+  o1.type="triangle";o1.frequency.value=f;o2.type="sine";o2.frequency.value=f*2;g2.gain.value=.22;
+  o1.connect(g);o2.connect(g2).connect(g);
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vel,t+.012);g.gain.exponentialRampToValueAtTime(vel*.32,t+.28);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  g.connect(BGM.bus);o1.start(t);o2.start(t);o1.stop(t+dur+.05);o2.stop(t+dur+.05);
+}
+function melNote(sc,step){BGM.mel=Math.max(0,Math.min(sc.length-1,BGM.mel+step));return sc[BGM.mel]}
+function walk(){const r=Math.random();return r<.35?-1:r<.7?1:r<.85?-2:2}
+function bgmBar(t){
+  const s=SONGS[BGM.mode],b=60/s.bpm,ch=s.bars[BGM.bar%s.bars.length],sc=s.scale;
+  if(s.style==="calm"){
+    pnote(ch[0]-12,t,b*6,.5);
+    ch.forEach((n,i)=>pnote(n,t+.2+i*.22,b*5,.26));
+    if(BGM.bar%4!==3&&Math.random()>.15)for(let k=0;k<4;k++){if(Math.random()<.38)pnote(melNote(sc,walk()),t+b*k+(Math.random()<.3?b/2:0),b*3,.3)}
+  }else if(s.style==="arp"){
+    pnote(ch[0]-12,t,b*2.5,.42);pnote(ch[0]-12,t+b*2,b*2.5,.32);
+    const arp=[...ch,ch[1]+12,ch[2],ch[1]];arp.push(ch[0]+12);
+    for(let k=0;k<8;k++)pnote(arp[k%arp.length],t+k*b/2,b*1.4,.16);
+    for(let k=0;k<4;k++)if(Math.random()<.2)pnote(melNote(sc,walk()),t+b*k,b*2,.22);
+  }else{
+    for(let k=0;k<8;k++)pnote(ch[0]-12,t+k*b/2,b*.6,k%4===0?.42:.24);
+    ch.forEach((n,i)=>pnote(n,t+i*.03,b*1.5,.15));
+    for(let k=0;k<4;k++)if(Math.random()<.32)pnote(melNote(sc,walk()),t+b*k+(k%2?b/2:0),b*1.2,.24);
+  }
+  BGM.bar++;return b*4;
+}
+function bgmTick(){
+  if(!BGM.master)return;const now=AC.currentTime;
+  if(BGM.want!==BGM.mode){BGM.fade=Math.max(0,BGM.fade-.12);if(BGM.fade<=0){BGM.mode=BGM.want;BGM.bar=0;BGM.mel=3;BGM.barT=now+.15}}
+  else BGM.fade=Math.min(1,BGM.fade+.06);
+  if(BGM.fade>0||BGM.want===BGM.mode)while(BGM.barT<now+.7)BGM.barT+=bgmBar(Math.max(BGM.barT,now+.05));
+  const speaking=("speechSynthesis" in window)&&speechSynthesis.speaking;
+  const v=SONGS[BGM.mode].vol*BGM.fade*(speaking?.15:1)*(document.hidden?0:1);
+  BGM.master.gain.setTargetAtTime(v,now,.12);
+}
+function bgmStart(){if(!BGM.on||!bgmSetup())return;if(!BGM.timer){BGM.barT=AC.currentTime+.15;BGM.fade=0;BGM.mode=BGM.want;BGM.timer=setInterval(bgmTick,120)}BGM.started=true}
+function bgmStop(){if(BGM.timer){clearInterval(BGM.timer);BGM.timer=null}if(BGM.master)BGM.master.gain.setTargetAtTime(0,AC.currentTime,.2)}
+function bgmMode(m){BGM.want=m;if(!BGM.timer)BGM.mode=m}
+function bgmToggle(){BGM.on=!BGM.on;S.bgm=BGM.on;save();if(BGM.on)bgmStart();else bgmStop();bgmLabel()}
+function bgmLabel(){document.querySelectorAll(".bgmbtn").forEach(b=>{b.textContent=BGM.on?"♪ BGM オン":"♪ BGM オフ";b.setAttribute("aria-pressed",BGM.on)})}
+["pointerdown","keydown"].forEach(ev=>document.addEventListener(ev,e=>{if(!BGM.started&&BGM.on&&!(e.target.closest&&e.target.closest(".bgmbtn")))bgmStart()},true));
+
+// ================= 3D (three.js) =================
+const RM3=!!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);
+let HAS3D=(()=>{if(!window.THREE)return false;try{const c=document.createElement("canvas");return !!(window.WebGLRenderingContext&&(c.getContext("webgl")||c.getContext("experimental-webgl")))}catch(e){return false}})();
+const ORE_HEX={stone:"#8d8f94",copper:"#d0814a",iron:"#ddd6cb",gold:"#f2c230",ruby:"#e0405a"};
+let R3=null,cur3=null,raf3=0,last3=0,BOXG=null,NOISE=null;
+function getR3(){if(R3)return R3;try{R3=new THREE.WebGLRenderer({antialias:true,alpha:true});R3.setPixelRatio(Math.min(window.devicePixelRatio||1,2));R3.domElement.setAttribute("aria-hidden","true")}catch(e){R3=null;HAS3D=false}return R3}
+function boxG(){return BOXG||(BOXG=new THREE.BoxGeometry(1,1,1))}
+function noise3(){if(NOISE)return NOISE;const c=document.createElement("canvas");c.width=c.height=16;const x=c.getContext("2d");
+  for(let i=0;i<16;i++)for(let j=0;j<16;j++){const v=200+Math.floor(Math.random()*55);x.fillStyle=`rgb(${v},${v},${v})`;x.fillRect(i,j,1,1)}
+  x.fillStyle="rgba(0,0,0,.16)";x.fillRect(0,15,16,1);x.fillRect(15,0,1,16);x.fillStyle="rgba(255,255,255,.18)";x.fillRect(0,0,16,1);x.fillRect(0,0,1,16);
+  NOISE=new THREE.CanvasTexture(c);NOISE.magFilter=THREE.NearestFilter;NOISE.minFilter=THREE.NearestFilter;return NOISE}
+function vmat(col,o){return new THREE.MeshLambertMaterial(Object.assign({color:col,map:noise3()},o||{}))}
+function lights3(sc){sc.add(new THREE.HemisphereLight(0xffffff,0x5a5048,0.8));const d=new THREE.DirectionalLight(0xffffff,0.7);d.position.set(4,8,10);sc.add(d)}
+function vbox(par,w,h,d,col,x,y,z,o){const m=new THREE.Mesh(boxG(),vmat(col,o));m.scale.set(w,h,d);m.position.set(x,y,z);par.add(m);return m}
+function instGroup(par,cells,mk,size){const m4=new THREE.Matrix4(),q=new THREE.Quaternion(),p=new THREE.Vector3(),s=new THREE.Vector3();
+  Object.keys(cells).forEach(col=>{const L=cells[col];if(!L.length)return;const im=new THREE.InstancedMesh(boxG(),mk(col),L.length);
+    L.forEach((c,i)=>{p.set(c[0],c[1],c[2]);s.set(c[3]||size||1,c[4]||size||1,c[5]||size||1);m4.compose(p,q,s);im.setMatrixAt(i,m4)});par.add(im)})}
+function pickaxe3(head){
+  const g=new THREE.Group(),piv=new THREE.Group();g.add(piv);const u=0.13,mk=(cx,cy,col)=>vbox(piv,u,u,u,col,cx*u,cy*u,0);
+  for(let i=0;i<7;i++)mk(i,i,i%2?"#7d5634":"#6e4b2e");
+  [[2,8],[3,8],[4,8],[5,8],[6,7],[7,7],[8,6],[8,5],[8,4],[8,3]].forEach(([a,b])=>mk(a,b,head));
+  [[6,8],[7,8],[8,7],[8,8]].forEach(([a,b])=>mk(a,b,head));
+  return{g,piv};
+}
+function particles3(sc){const P=[];return{
+  add(col,x,y,z,s,vx,vy,vz,life,grav,geo,mat){const m=new THREE.Mesh(geo||boxG(),mat||vmat(col));m.scale.setScalar(s);m.position.set(x,y,z);sc.add(m);
+    P.push({m,s,vx,vy,vz,rx:(Math.random()-.5)*12,ry:(Math.random()-.5)*12,life,max:life,g:grav==null?9:grav})},
+  update(dt){for(let i=P.length-1;i>=0;i--){const p=P[i];p.vy-=p.g*dt;p.m.position.x+=p.vx*dt;p.m.position.y+=p.vy*dt;p.m.position.z+=p.vz*dt;
+    p.m.rotation.x+=p.rx*dt;p.m.rotation.y+=p.ry*dt;p.life-=dt;const k=Math.min(1,p.life/p.max*2.2);p.m.scale.setScalar(Math.max(0.001,p.s*k));
+    if(p.life<=0){sc.remove(p.m);if(p.m.material.map!==NOISE&&p.m.material.map)p.m.material.map.dispose();p.m.material.dispose();if(p.m.geometry!==BOXG)p.m.geometry.dispose();P.splice(i,1)}}}}}
+function swingAngle(t,rest,hit){if(t<0.07)return rest+(hit-rest)*(t/0.07);const k=Math.max(0,1-(t-0.07)/0.16);return rest+(hit-rest)*k}
+
+/* --- mining block --- */
+function oreCanvas(ore){
+  const c=document.createElement("canvas");c.width=c.height=64;const x=c.getContext("2d");
+  for(let i=0;i<16;i++)for(let j=0;j<16;j++){const d=Math.floor(Math.random()*34)-20;x.fillStyle=`rgb(${141+d},${143+d},${148+d})`;x.fillRect(i*4,j*4,4,4)}
+  if(ore!=="stone"){const col=ORE_HEX[ore];const C=[[3,3],[11,2],[7,8],[2,12],[12,11]];
+    C.forEach(([a,b])=>{const cells=[[0,0],[1,0],[0,1],[1,1]].filter(()=>Math.random()<.8);cells.push([0,0]);
+      cells.forEach(([u,v])=>{x.fillStyle="#3b342c";x.fillRect((a+u)*4+1,(b+v)*4+1,4,4);x.fillStyle=col;x.fillRect((a+u)*4,(b+v)*4,4,4)});
+      x.fillStyle="rgba(255,255,255,.55)";x.fillRect(a*4,b*4,2,2)})}
+  x.strokeStyle="rgba(20,17,14,.55)";x.lineWidth=3;x.strokeRect(1.5,1.5,61,61);
+  return{c,x,base:x.getImageData(0,0,64,64)};
+}
+function sceneMine(ore,tool){
+  const sc=new THREE.Scene(),cam=new THREE.PerspectiveCamera(32,1.2,0.1,60);lights3(sc);
+  const oc=oreCanvas(ore),tex=new THREE.CanvasTexture(oc.c);tex.magFilter=THREE.NearestFilter;tex.minFilter=THREE.NearestFilter;
+  const cube=new THREE.Mesh(boxG(),new THREE.MeshLambertMaterial({map:tex}));cube.scale.setScalar(1.5);sc.add(cube);
+  const sh=new THREE.Mesh(new THREE.CircleGeometry(0.95,24),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.28}));sh.rotation.x=-Math.PI/2;sh.position.y=-1.2;sc.add(sh);
+  const pk=pickaxe3(ORE_HEX[tool]||ORE_HEX.iron);pk.g.position.set(1.1,-0.85,0.75);pk.g.rotation.y=-0.35;pk.piv.rotation.z=0.15;sc.add(pk.g);
+  cam.position.set(0.8,0.95,5.6);cam.lookAt(0.25,-0.1,0);
+  const fx=particles3(sc);let time=0,sw=9,punch=0,broken=false;
+  return{scene:sc,camera:cam,
+    hit(){sw=0;punch=1;if(!RM3&&!broken)for(let i=0;i<3;i++)fx.add("#cfc8bb",0.55,(Math.random()-.3)*0.8,0.8,0.09,1+Math.random(),1.5+Math.random(),Math.random(),0.45)},
+    crack(f){const x=oc.x;x.putImageData(oc.base,0,0);const n=Math.round(f*CRACKS.length),s=64/118;x.strokeStyle="#14110e";x.lineWidth=3;x.lineCap="square";
+      for(let i=0;i<n;i++){const pts=CRACKS[i].match(/-?\d+(\.\d+)?/g).map(Number);x.beginPath();x.moveTo(pts[0]*s,pts[1]*s);for(let k=2;k<pts.length;k+=2)x.lineTo(pts[k]*s,pts[k+1]*s);x.stroke()}
+      tex.needsUpdate=true},
+    shatter(o){if(broken)return;broken=true;cube.visible=false;sh.visible=false;const main=o==="stone"?"#6e7075":ORE_HEX[o];
+      for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++)for(let k=-1;k<=1;k++){const col=(i+j+k+3)%3===0?main:((i*j+k)%2?ORE_HEX.stone:"#7a7c81");
+        fx.add(col,i*0.5,j*0.5,k*0.5,0.46,i*2.6+(Math.random()-.5),j*2+2.4+Math.random()*1.5,k*2+1+Math.random(),0.9+Math.random()*0.35)}
+      if(o!=="stone"){const geo=new THREE.OctahedronGeometry(1,0);for(let i=0;i<3;i++)fx.add(null,(i-1)*0.5,0,0.6,0.3,(i-1)*0.6,3.6,0.4,1.25,4.5,geo,new THREE.MeshLambertMaterial({color:ORE_HEX[o],emissive:ORE_HEX[o],emissiveIntensity:.35}))}},
+    update(dt){time+=dt;sw+=dt;
+      if(!broken){cube.rotation.y=RM3?0.65:0.65+Math.sin(time*0.6)*0.32;cube.rotation.x=0.2;cube.position.y=RM3?0:Math.sin(time*1.6)*0.05;
+        punch=Math.max(0,punch-dt*7);cube.scale.setScalar(1.5*(1-0.07*punch));cube.rotation.z=-0.1*punch;cube.position.x=-0.06*punch}
+      pk.piv.rotation.z=swingAngle(sw,0.15,1.05);fx.update(dt)}};
+}
+/* --- boss --- */
+function sceneBoss(id,tool){
+  const B=BOSS[id],sc=new THREE.Scene(),cam=new THREE.PerspectiveCamera(32,1,0.1,60);lights3(sc);
+  const body=new THREE.Group(),inner=new THREE.Group();body.add(inner);sc.add(body);
+  const cells={},mats=[];
+  BOSS_PAT.forEach((row,r)=>[...row].forEach((ch,c)=>{if(ch===".")return;const x=c-4.5,y=9-r;
+    for(let z=-2;z<=2;z++){let col=B.c;if(z===2){if(ch==="E")col="#ffffff";else if(ch==="P")col="#ffffff";else if(ch==="M")col=B.d}(cells[col]=cells[col]||[]).push([x,y,z])}
+    if(ch==="P")(cells["#111111"]=cells["#111111"]||[]).push([x,y,2.7,0.8,0.8,0.5])}));
+  instGroup(inner,cells,col=>{const m=vmat(col,{emissive:"#000000"});mats.push(m);return m});
+  body.scale.setScalar(0.16);body.position.set(-0.2,-0.85,0);
+  const sh=new THREE.Mesh(new THREE.CircleGeometry(0.95,24),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.28}));sh.rotation.x=-Math.PI/2;sh.position.set(-0.2,-0.9,0);sc.add(sh);
+  const pk=pickaxe3(ORE_HEX[tool]||ORE_HEX.iron);pk.g.position.set(0.75,-0.9,0.9);pk.g.rotation.y=-0.35;pk.g.scale.setScalar(0.75);sc.add(pk.g);
+  cam.position.set(0.5,0.7,5.2);cam.lookAt(0.05,-0.05,0);
+  const fx=particles3(sc);let time=0,sw=9,flash=0,knock=0;
+  return{scene:sc,camera:cam,
+    hit(){sw=0},
+    hurt(){flash=1;knock=1;if(!RM3)for(let i=0;i<7;i++)fx.add(i%2?B.c:B.d,0.3,0.4+Math.random()*0.6,0.6,0.14,1.2+Math.random()*2.2,2+Math.random()*2,Math.random()*1.5,0.8)},
+    update(dt){time+=dt;sw+=dt;flash=Math.max(0,flash-dt*3.5);knock=Math.max(0,knock-dt*4);
+      const low=G&&G.boss?G.boss.hp/G.boss.max:1;
+      inner.position.y=RM3?0:Math.abs(Math.sin(time*2.2))*0.9;
+      body.rotation.y=RM3?0.3:0.3+Math.sin(time*0.9)*0.35;body.rotation.z=0.25*knock+(low<0.34&&!RM3?Math.sin(time*30)*0.02:0);
+      body.position.x=-0.2-0.35*knock;
+      mats.forEach(m=>m.emissive.setRGB(flash,flash*0.6,flash*0.6));
+      pk.piv.rotation.z=swingAngle(sw,0.15,1.05);fx.update(dt)}};
+}
+/* --- base diorama --- */
+function emojiTex(e){const c=document.createElement("canvas");c.width=c.height=64;const x=c.getContext("2d");x.font="50px sans-serif";x.textAlign="center";x.textBaseline="middle";x.fillText(e,32,36);const t=new THREE.CanvasTexture(c);t.minFilter=THREE.LinearFilter;return t}
+function sceneBase(){
+  const sc=new THREE.Scene(),cam=new THREE.PerspectiveCamera(26,3,0.5,500);lights3(sc);
+  const solid={},glass={},ghost={},cb=curBuilding(),W=(x,y)=>[x-31.5,15-y];
+  Object.entries(S.build).forEach(([k,v])=>{const [x,y]=k.split(",").map(Number),[t,id]=v.split(":"),[wx,wy]=W(x,y);
+    if(t==="b"){const Bk=BLOCKS[id];if(!Bk)return;const tgt=(id==="glass"||id==="water")?glass:solid;(tgt[Bk.c]=tgt[Bk.c]||[]).push([wx,wy,0,1,1,3])}
+    else{const D=DECOS[id];if(!D)return;const s=new THREE.Sprite(new THREE.SpriteMaterial({map:emojiTex(D.e),transparent:true}));s.scale.set(1.3,1.3,1);s.position.set(wx,wy+0.1,1.9);sc.add(s)}});
+  PLAN.forEach((v,k)=>{if(v.b!==cb||S.build[k])return;const [x,y]=k.split(",").map(Number),[wx,wy]=W(x,y),c=BLOCKS[v.blk].c;(ghost[c]=ghost[c]||[]).push([wx,wy,0,0.92,0.92,2.8])});
+  instGroup(sc,solid,col=>vmat(col));
+  instGroup(sc,glass,col=>vmat(col,{transparent:true,opacity:.55}));
+  instGroup(sc,ghost,col=>new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.22,depthWrite:false}));
+  vbox(sc,66,1.4,5,"#6e7075",0,-1.2,0);vbox(sc,62,1.2,3.6,"#5c5e63",0,-2.4,0);vbox(sc,50,1,2.4,"#4d4f54",0,-3.4,0);
+  const clouds=[];for(let i=0;i<7;i++){const c=vbox(sc,3+Math.random()*4,0.8,1.6,"#ffffff",-36+i*12+Math.random()*4,10+Math.random()*5,-9-Math.random()*4);clouds.push(c)}
+  let yaw0=0.18,yaw=yaw0,pitch=0.16,time=0,dragT=9;const tgt=new THREE.Vector3(0,6.2,0);
+  return{scene:sc,camera:cam,
+    drag(dx,dy){yaw=Math.max(-0.95,Math.min(0.95,yaw-dx*0.006));pitch=Math.max(0.02,Math.min(0.75,pitch+dy*0.004));dragT=0},
+    update(dt){time+=dt;dragT+=dt;
+      if(!RM3&&dragT>3){const want=yaw0+Math.sin(time*0.25)*0.16;yaw+=(want-yaw)*Math.min(1,dt)}
+      if(!RM3)clouds.forEach((c,i)=>{c.position.x+=dt*(0.4+i*0.05);if(c.position.x>42)c.position.x=-42});
+      const half=34.5,fov=cam.fov*Math.PI/360,dist=Math.max(half/(Math.tan(fov)*cam.aspect),9/Math.tan(fov))+4;
+      cam.position.set(tgt.x+dist*Math.sin(yaw)*Math.cos(pitch),tgt.y+dist*Math.sin(pitch),dist*Math.cos(yaw)*Math.cos(pitch));cam.lookAt(tgt)}};
+}
+/* --- mount & loop --- */
+function dispose3(o){if(!o)return;o.scene.traverse(n=>{if(n.geometry&&n.geometry!==BOXG)n.geometry.dispose();if(n.material){(Array.isArray(n.material)?n.material:[n.material]).forEach(m=>{if(m.map&&m.map!==NOISE)m.map.dispose();m.dispose()})}})}
+function size3(){if(!cur3||!R3)return;const h=cur3.host,w=h.clientWidth||100,hh=h.clientHeight||w;R3.setSize(w,hh,false);cur3.camera.aspect=w/hh;cur3.camera.updateProjectionMatrix()}
+function bindDrag3(host){let down=false,lx=0,ly=0;
+  host.addEventListener("pointerdown",e=>{down=true;lx=e.clientX;ly=e.clientY});
+  host.addEventListener("pointermove",e=>{if(!down||!cur3||cur3.host!==host||!cur3.drag)return;cur3.drag(e.clientX-lx,e.clientY-ly);lx=e.clientX;ly=e.clientY});
+  ["pointerup","pointercancel","pointerleave"].forEach(ev=>host.addEventListener(ev,()=>{down=false}))}
+function loop3(ts){raf3=0;if(!cur3||!R3||!document.body.contains(cur3.host)||cur3.host.offsetParent===null)return;
+  const dt=Math.min(0.05,(ts-last3)/1000);last3=ts;cur3.update(dt);R3.render(cur3.scene,cur3.camera);raf3=requestAnimationFrame(loop3)}
+function attach3(host,make){
+  if(cur3){dispose3(cur3);cur3=null}
+  if(!host||!HAS3D||!getR3())return false;
+  let o;try{o=make()}catch(e){console.error(e);return false}
+  o.host=host;cur3=o;host.appendChild(R3.domElement);size3();
+  if(o.drag&&!host.dataset.drag){host.dataset.drag=1;bindDrag3(host)}
+  if(!raf3){last3=performance.now();raf3=requestAnimationFrame(loop3)}return true}
+window.addEventListener("resize",size3);
+function use3(){return HAS3D&&S.view3d!==false}
+function mountGame3(){if(!G||!use3())return;const h=$("h3d");if(!h)return;
+  attach3(h,()=>G.boss?sceneBoss(G.st.bid,G.mode.ore):sceneMine(G.mode.ore,G.mode.ore))}
+function mountBase3(){const h=$("base3d"),g=$("grid"),b=$("viewBtn");
+  if(b)b.style.display=HAS3D?"":"none";
+  if(!h)return;const on=use3();h.style.display=on?"block":"none";g.style.display=on?"none":"grid";
+  if(b)b.textContent=on?"2Dで見る":"3Dで見る";
+  if(on)attach3(h,sceneBase)}
+
 // ---------- home ----------
 let lastPlaced=null;
 function cellHTML(v,extra){
@@ -762,6 +969,7 @@ function renderBase(){
     +items.map(([k,v])=>`<span class="ore">${DECOS[k].e} ${DECOS[k].n} ${v}</span>`).join("");
   const cb=$("chestBtn");cb.innerHTML="🎁 宝箱"+(S.chests.length?`<span class="badge">${S.chests.length}</span>`:"");
   const dx=dexStats();$("dexBtn").textContent=`📖 単語図鑑 ${dx.seen}/${dx.total}`;
+  mountBase3();
 }
 function wordStages(w){return w.stages.filter(s=>!s.text)}
 function nextTask(){
@@ -785,7 +993,7 @@ function renderHero(){
   if(openLayers==null)openLayers=new Set([t.w?t.w.id:4]);
 }
 function renderHome(){
-  renderBase();renderHero();
+  bgmMode("home");renderBase();renderHero();
   const box=$("layers");box.innerHTML="";
   WORLDS.forEach(w=>{
     const el=document.createElement("section");el.className="layer"+(w.locked?" locked":"")+(openLayers.has(w.id)?"":" closed");
@@ -837,7 +1045,7 @@ const CRACKS=["M30 20 L45 42 L38 58","M45 42 L66 50 L80 38","M38 58 L52 76 L48 9
 function startGame(st,lv){
   G={st,lv,mode:lvOf(st,lv),boss:st.boss?{hp:BOSS_HP,max:BOSS_HP,hearts:3,limit:BOSS_TIME}:null,queue:shuffle(st.items).map(i=>({...i,re:0})),pos:0,uniq:st.items.length,cleared:new Set(),
      miss:0,keys:0,firstTry:0,t0:null,timer:null,wordMiss:0,charMiss:0,idx:0,busy:false,missed:new Map(),loot:{}};
-  $("home").style.display="none";$("game").style.display="block";
+  $("home").style.display="none";$("game").style.display="block";bgmMode(G.boss?"boss":"game");
   $("hudStage").textContent=st.boss?"層ボス "+st.name:st.review?"ミス復習":(st.text?"":st.id+" ")+st.name;
   $("hudLv").textContent=`Lv${lv} ${G.mode.name}`;
   $("help").textContent=G.mode.type==="choice"?"数字キー 1〜4 でもえらべます。Enter でもう一度聞く。":G.mode.type==="puzzle"?"ブロックをクリック、または数字キーでえらぶ。正しい順にならべよう。Enter でもう一度聞く。":"半角英数で入力。1文字ごとにツルハシで1回叩く。大文字・小文字は気にしなくてOK。Enter でもう一度聞く。";
@@ -854,12 +1062,14 @@ const startClock=()=>{if(!G.t0)G.t0=Date.now()};
 const cur=()=>G.queue[G.pos];
 function renderTrack(){$("track").innerHTML=Array.from({length:G.uniq},(_,i)=>`<span class="${i<G.cleared.size?"got":""}"></span>`).join("");
   $("hudCount").textContent=`${G.cleared.size}/${G.uniq}`;$("hudMiss").textContent=`ミス ${G.miss}`}
-function blockHTML(){if(G.boss)return bossPanel();const ore=ORES[G.mode.ore].c;
+function blockHTML(){if(G.boss)return bossPanel();if(use3())return `<div class="target t3d" id="tgt"><div class="h3d" id="h3d"></div></div>`;const ore=ORES[G.mode.ore].c;
   return `<div class="target" id="tgt"><span class="blk" id="blk" style="--ore:${ore}"></span><svg viewBox="0 0 118 118">${CRACKS.map(d=>`<path d="${d}"/>`).join("")}</svg></div>`}
-function setCrack(f){const ps=document.querySelectorAll("#tgt path");const n=Math.round(f*ps.length);ps.forEach((p,i)=>p.style.opacity=i<n?1:0)}
-function hitAnim(){const b=$("blk");if(!b)return;b.classList.add("hit");setTimeout(()=>b.classList.remove("hit"),80)}
+function setCrack(f){if(cur3&&cur3.crack&&$("h3d")){cur3.crack(f);return}const ps=document.querySelectorAll("#tgt path");const n=Math.round(f*ps.length);ps.forEach((p,i)=>p.style.opacity=i<n?1:0)}
+function hitAnim(){if(cur3&&cur3.hit&&$("h3d")){cur3.hit();return}const b=$("blk");if(!b)return;b.classList.add("hit");setTimeout(()=>b.classList.remove("hit"),80)}
 function breakBlock(oreKey){
-  const t=$("tgt");if(!t)return;t.classList.add("broken");sfx.brk();
+  const t=$("tgt");if(!t)return;
+  if(cur3&&cur3.shatter&&$("h3d")){sfx.brk();cur3.shatter(oreKey);const g=document.createElement("span");g.className="gain";g.textContent=`+1 ${ORES[oreKey].n}`;g.style.color=ORES[oreKey].c;t.appendChild(g);return}
+  t.classList.add("broken");sfx.brk();
   const col=ORES[oreKey].c;
   for(let i=0;i<8;i++){const d=document.createElement("span");d.className="bit";const a=i/8*Math.PI*2;
     d.style.setProperty("--dx",Math.cos(a)*90+"px");d.style.setProperty("--dy",Math.sin(a)*70-20+"px");
@@ -891,6 +1101,7 @@ function showItem(){
     renderSlots();
   }
   $("spk").onclick=()=>say(it.en);
+  mountGame3();
   if(G.mode.type==="choice"||G.mode.listen)setTimeout(()=>say(it.en),150);
 }
 const KEYS="1234567890";
@@ -1226,10 +1437,11 @@ function openBoss(id){
   $("stageModal").classList.add("on");
 }
 function bossPanel(){const id=G.st.bid,b=G.boss;
-  return `<div class="bosspanel"><div class="bossspr" id="blk">${bossSprite(id)}</div><div class="bossinfo"><b>${esc(BOSS[id].name)}</b>
+  return `<div class="bosspanel">${use3()?`<div class="h3d" id="h3d"></div>`:`<div class="bossspr" id="blk">${bossSprite(id)}</div>`}<div class="bossinfo"><b>${esc(BOSS[id].name)}</b>
    <div class="hpbar"><i id="hpI" style="width:${b.hp/b.max*100}%"></i></div><div style="display:flex;justify-content:space-between"><span id="hpT">HP ${b.hp}/${b.max}</span><span class="hearts" id="hrt">${"❤".repeat(b.hearts)}${"🖤".repeat(3-b.hearts)}</span></div></div></div>`}
 function updBoss(hurt){const b=G.boss;const i=$("hpI");if(i)i.style.width=(b.hp/b.max*100)+"%";const t=$("hpT");if(t)t.textContent=`HP ${b.hp}/${b.max}`;
   const h=$("hrt");if(h)h.textContent="❤".repeat(Math.max(0,b.hearts))+"🖤".repeat(3-Math.max(0,b.hearts));
+  if(hurt&&cur3&&cur3.hurt&&$("h3d")){cur3.hurt();return}
   if(hurt){const s=$("blk");if(s){s.classList.remove("hurt");void s.offsetWidth;s.classList.add("hurt")}}}
 function endBoss(win){
   if(!G||G.ended)return;G.ended=true;G.busy=true;clearInterval(G.timer);
@@ -1266,6 +1478,8 @@ function openHelp(){
   $("helpModal").classList.add("on");
 }
 $("helpBtn").onclick=openHelp;
+$("bgmBtn").onclick=bgmToggle;$("bgmBtn2").onclick=bgmToggle;bgmLabel();
+$("viewBtn").onclick=()=>{S.view3d=!use3();save();mountBase3()};
 
 // ---------- parent ----------
 $("parentBtn").onclick=()=>{
